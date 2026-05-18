@@ -797,6 +797,7 @@ initState();
 // ────────────────────────────────────────────
 const SCREENS = ['s0','s1','s2','s3','s4','s5','s6','s7','s8','s8b','s9','s10','s11','s11b','s12','s13','s14','s15'];
 let histStack = [];
+let editMode = false; // 리포트에서 수정하기로 진입했을 때 true
 
 function go(id){
   const cur = document.querySelector('.screen.active');
@@ -805,7 +806,16 @@ function go(id){
 }
 function goBack(){
   if(!histStack.length) return;
+  // 수정 모드에서 뒤로가기 → 리포트로
+  if(editMode){ editMode=false; _show('s15'); histStack=[]; return; }
   _show(histStack.pop());
+}
+
+// 리포트에서 수정하기 진입
+function goEdit(screenId){
+  editMode = true;
+  histStack = [];
+  go(screenId);
 }
 function _show(id){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
@@ -926,6 +936,10 @@ function pickAge(el,v){
   const box = document.getElementById('customAgeBox');
   if(v===0){box.style.display='block';return;}
   box.style.display='none'; S.retireAge=v;
+  if(editMode){
+    S.years = S.retireAge - S.nowAge;
+    editMode=false; renderResult(); setTimeout(()=>go('s15'),200); return;
+  }
   setTimeout(()=>go('s2'),200);
 }
 function calcYears(){
@@ -933,7 +947,13 @@ function calcYears(){
   S.nowAge=v; S.years=S.retireAge-v;
   document.getElementById('yearHint').textContent = S.years>0?`→ 은퇴까지 ${S.years}년 남았어요`:'';
 }
-function goS3(){ if(S.nowAge&&S.years>0){ S.lifeAge=90; go('s3'); } }
+function goS3(){
+  if(S.nowAge&&S.years>0){
+    S.lifeAge=90;
+    if(editMode){ editMode=false; renderResult(); go('s15'); return; }
+    go('s3');
+  }
+}
 
 function pickMonthly(el,v){
   el.closest('.sel-list').querySelectorAll('.sel-item').forEach(e=>e.classList.remove('selected'));
@@ -941,6 +961,10 @@ function pickMonthly(el,v){
   const box = document.getElementById('customMonthlyBox');
   if(v===0){box.style.display='block';return;}
   box.style.display='none'; S.monthly=v;
+  if(editMode){
+    doCalcTarget(); editMode=false; renderResult();
+    setTimeout(()=>go('s15'),200); return;
+  }
   setTimeout(()=>{doCalcTarget();go('s4');},200);
 }
 function doCalcTarget(){
@@ -989,6 +1013,7 @@ function doPension(){
   document.getElementById('s7cmp-bot').textContent=diff>0?fmt(diff)+' 줄었어요':'동일해요';
 
   renderAssetAmtRows();
+  if(editMode){ editMode=false; renderResult(); go('s15'); return; }
   go('s7');
 }
 
@@ -996,6 +1021,11 @@ function doAsset(){
   // 수익률 행 렌더 후 다음
   renderAssetRateRows();
   go('s8b');
+}
+
+function afterAssetRateQuiet(){
+  const y=S.years;
+  S._assetFV=S.assets.reduce((s,a)=>s+fvL(a.amount||0,a.rate||5,y),0);
 }
 
 function afterAssetRate(){
@@ -1072,7 +1102,7 @@ function buildReport(tot, mi, ri){
     <div class="rpt-item">
       <div class="rpt-lbl">${it.l}</div>
       <div class="rpt-val">${it.v}</div>
-      ${it.s?`<div class="rpt-edit" onclick="go('${it.s}')">수정</div>`:''}
+      ${it.s?`<div class="rpt-edit" onclick="goEdit('${it.s}')">수정</div>`:''}
     </div>`).join('');
 
   // 조정 슬라이더 — 월 투자 항목만
@@ -1420,10 +1450,6 @@ function doReset(){
   _show('s0');
 }
 
-// S8b → S9 연결
-document.getElementById('s8b').querySelector('.btn').onclick = afterAssetRate;
-// S11b → S12 연결 (수익률 선택 후 바로 s12로)
-document.getElementById('s11b').querySelector('.btn').onclick = function(){ go('s12'); };
 // S8 다음 버튼 → 입력값 싱크 후 수익률 화면
 document.getElementById('s8').querySelector('.btn').onclick = function(){
   document.querySelectorAll('#assetAmtRows input[type=number]').forEach((inp,i)=>{
@@ -1432,6 +1458,11 @@ document.getElementById('s8').querySelector('.btn').onclick = function(){
   renderAssetRateRows();
   go('s8b');
 };
+// S8b 수익률 완료 → editMode면 리포트로, 아니면 s9로
+document.getElementById('s8b').querySelector('.btn').onclick = function(){
+  if(editMode){ editMode=false; afterAssetRateQuiet(); renderResult(); go('s15'); return; }
+  afterAssetRate();
+};
 // S11 다음 버튼 → 입력값 싱크 후 수익률 화면
 document.getElementById('s11').querySelector('.btn').onclick = function(){
   document.querySelectorAll('#monthlyAmtRows input[type=number]').forEach((inp,i)=>{
@@ -1439,6 +1470,11 @@ document.getElementById('s11').querySelector('.btn').onclick = function(){
   });
   renderMonthlyRateRows();
   go('s11b');
+};
+// S11b 수익률 완료 → editMode면 리포트로
+document.getElementById('s11b').querySelector('.btn').onclick = function(){
+  if(editMode){ editMode=false; renderResult(); go('s15'); return; }
+  go('s12');
 };
 </script>
 </body>
