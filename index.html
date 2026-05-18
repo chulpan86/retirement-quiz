@@ -50,8 +50,23 @@
   --r-lg:18px;
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
-html,body{height:100dvh;font-family:'Pretendard',-apple-system,sans-serif;background:#E4E9EF;display:flex;align-items:center;justify-content:center;overflow:hidden;}
-.app{width:min(100%,430px);height:100dvh;background:var(--bg);display:flex;flex-direction:column;overflow:hidden;}
+html,body{
+  height:100%; height:100dvh;
+  font-family:'Pretendard',-apple-system,sans-serif;
+  background:#E4E9EF;
+  display:flex;align-items:center;justify-content:center;
+  overflow:hidden;
+  /* 모바일 주소창 때문에 튀는 현상 방지 */
+  position:fixed;width:100%;
+}
+.app{
+  width:min(100%,430px);
+  height:100%; height:100dvh;
+  background:var(--bg);
+  display:flex;flex-direction:column;
+  overflow:hidden;
+  position:relative;
+}
 
 /* ── 상단 바 ── */
 .topbar{display:flex;align-items:center;padding:clamp(14px,3.5vw,18px) var(--sp-lg) 0;gap:var(--sp-sm);flex-shrink:0;}
@@ -80,8 +95,16 @@ html,body{height:100dvh;font-family:'Pretendard',-apple-system,sans-serif;backgr
 .q-sub{font-size:var(--f-sm);color:var(--t3);line-height:1.55;margin-bottom:var(--sp-md);word-break:keep-all;flex-shrink:0;}
 
 /* ── 선택지 ── */
-.sel-list{display:flex;flex-direction:column;gap:var(--sp-xs);}
-.sel-item{background:var(--bg-sub);border-radius:var(--r-md);padding:clamp(11px,3vw,14px) var(--sp-md);font-size:var(--f-base);color:var(--t1);text-align:center;cursor:pointer;border:1.5px solid transparent;font-weight:500;transition:all .12s;word-break:keep-all;letter-spacing:-.01em;}
+.sel-list{display:flex;flex-direction:column;gap:var(--sp-xs);flex:1;}
+.sel-item{
+  background:var(--bg-sub);border-radius:var(--r-md);
+  padding:0 var(--sp-md);
+  font-size:var(--f-base);color:var(--t1);text-align:center;
+  cursor:pointer;border:1.5px solid transparent;font-weight:500;
+  transition:all .12s;word-break:keep-all;letter-spacing:-.01em;
+  display:flex;align-items:center;justify-content:center;
+  flex:1;min-height:clamp(48px,10vw,60px);
+}
 .sel-item:active{transform:scale(.985);}
 .sel-item.selected{background:var(--blue-l);color:var(--blue);font-weight:700;border-color:rgba(49,130,246,.25);}
 .sel-item.dim{color:var(--t3);}
@@ -176,10 +199,10 @@ html,body{height:100dvh;font-family:'Pretendard',-apple-system,sans-serif;backgr
 .inline-add-row .confirm-btn{padding:8px 16px;border-radius:var(--r-sm);background:var(--blue);color:#fff;border:none;font-size:var(--f-xs);font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;}
 
 /* ── 격려 화면 ── */
-.enc{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:var(--sp-xl) var(--sp-lg) var(--sp-sm);text-align:center;gap:var(--sp-sm);}
-.enc .icon{font-size:clamp(52px,14vw,72px);}
+.enc{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:var(--sp-xl) var(--sp-lg) var(--sp-sm);text-align:center;gap:var(--sp-md);}
+.enc .icon{font-size:clamp(56px,16vw,80px);line-height:1;}
 .enc .t{font-size:var(--f-xl);font-weight:700;color:var(--t1);letter-spacing:-.02em;word-break:keep-all;}
-.enc .s{font-size:var(--f-base);color:var(--t3);line-height:1.6;word-break:keep-all;}
+.enc .s{font-size:var(--f-base);color:var(--t3);line-height:1.65;word-break:keep-all;}
 
 /* ── 박수 ── */
 .clap-wrap{position:relative;width:clamp(90px,22vw,120px);height:clamp(90px,22vw,120px);display:flex;align-items:center;justify-content:center;}
