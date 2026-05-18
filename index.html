@@ -31,13 +31,13 @@
   --border:#E5E8EB;
   --border2:#F0F2F4;
 
-  --f-xs:clamp(10px,2.6vw,12px);
-  --f-sm:clamp(12px,3.2vw,14px);
-  --f-base:clamp(13px,3.6vw,15px);
-  --f-md:clamp(15px,4.2vw,17px);
-  --f-lg:clamp(18px,5vw,21px);
-  --f-xl:clamp(21px,6vw,26px);
-  --f-2xl:clamp(28px,8vw,36px);
+  --f-xs:clamp(12px,3.2vw,13px);
+  --f-sm:clamp(14px,3.8vw,15px);
+  --f-base:clamp(15px,4.2vw,17px);
+  --f-md:clamp(17px,4.8vw,19px);
+  --f-lg:clamp(21px,5.8vw,24px);
+  --f-xl:clamp(24px,6.8vw,28px);
+  --f-2xl:clamp(32px,9vw,40px);
 
   --sp-xs:clamp(4px,1vw,6px);
   --sp-sm:clamp(8px,2vw,12px);
@@ -88,14 +88,14 @@ html,body{
 .footer{padding:var(--sp-xs) var(--sp-lg) max(var(--sp-md),env(safe-area-inset-bottom));flex-shrink:0;background:inherit;}
 
 /* ── 칩 ── */
-.chip{display:inline-block;font-size:var(--f-xs);font-weight:600;padding:3px 9px;border-radius:20px;background:var(--blue-l);color:var(--blue-d);margin-bottom:var(--sp-sm);flex-shrink:0;letter-spacing:-.01em;}
+.chip{display:inline-block;font-size:var(--f-sm);font-weight:600;padding:4px 12px;border-radius:20px;background:var(--blue-l);color:var(--blue-d);margin-bottom:var(--sp-md);flex-shrink:0;letter-spacing:-.01em;}
 
 /* ── 타이포 ── */
 .q-title{font-size:var(--f-lg);font-weight:700;color:var(--t1);line-height:1.35;margin-bottom:var(--sp-xs);word-break:keep-all;flex-shrink:0;letter-spacing:-.02em;}
 .q-sub{font-size:var(--f-sm);color:var(--t3);line-height:1.55;margin-bottom:var(--sp-md);word-break:keep-all;flex-shrink:0;}
 
 /* ── 선택지 ── */
-.sel-list{display:flex;flex-direction:column;gap:var(--sp-xs);flex:1;}
+.sel-list{display:flex;flex-direction:column;gap:var(--sp-sm);flex:1;}
 .sel-item{
   background:var(--bg-sub);border-radius:var(--r-md);
   padding:0 var(--sp-md);
@@ -103,7 +103,7 @@ html,body{
   cursor:pointer;border:1.5px solid transparent;font-weight:500;
   transition:all .12s;word-break:keep-all;letter-spacing:-.01em;
   display:flex;align-items:center;justify-content:center;
-  flex:1;min-height:clamp(48px,10vw,60px);
+  flex:1;min-height:clamp(56px,12vw,72px);
 }
 .sel-item:active{transform:scale(.985);}
 .sel-item.selected{background:var(--blue-l);color:var(--blue);font-weight:700;border-color:rgba(49,130,246,.25);}
@@ -1309,8 +1309,7 @@ async function doLoadFromSheet(){
     if(json.status === 'ok' && json.data){
       closeLoadModal();
       applyLoadedData(json.data);
-      showToast('✓ 불러왔어요! 결과를 확인해보세요');
-      go('s13');
+      showToast('✓ 불러왔어요! 리포트를 확인해보세요');
     } else {
       document.getElementById('loadErrMsg').textContent = '해당 비밀번호로 저장된 내용이 없어요';
     }
@@ -1331,9 +1330,24 @@ function applyLoadedData(d){
   S.br          = +d.br          || 5;
   S.inflation   = +d.inflation   || 2;
   S.totalAtRetire = +d.totalAtRetire || 0;
-  try { S.assets = JSON.parse(d.assets); } catch(e){}
-  try { S.monthlyInvests = JSON.parse(d.monthlyInvests); } catch(e){}
+  try { S.assets = JSON.parse(d.assets); } catch(e){ S.assets = []; }
+  try { S.monthlyInvests = JSON.parse(d.monthlyInvests); } catch(e){ S.monthlyInvests = []; }
+
+  // 자산 복리 재계산
+  const y = Math.max(1, S.years);
+  S._assetFV = S.assets.reduce((s,a)=>s+fvL(a.amount||0, a.rate||5, y), 0);
+
+  // 목표자산 재계산
+  const afterM = Math.max(0, S.monthly - S.pension);
+  const afterAsset = Math.round(afterM * 12 / 0.05);
+  const dividendM = Math.round(afterAsset * 0.05 / 12);
+  const gapY = Math.max(0, S.pensionAge - S.retireAge);
+  const gapShortfall = Math.max(0, S.monthly - dividendM);
+  S.finalTarget = Math.round(gapShortfall * 12 * gapY + afterAsset);
+  S.targetAsset = Math.round(S.monthly * 12 / 0.05);
+
   renderResult();
+  go('s15'); // 리포트로 바로 이동
 }
 
 // ────────────────────────────────────────────
