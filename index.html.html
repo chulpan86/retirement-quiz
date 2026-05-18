@@ -1,0 +1,1410 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>은퇴 준비 계산기</title>
+<link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+/* ── 토스 디자인 시스템 ──────────────────────────
+   포인트 컬러: 블루 단일 (#3182F6)
+   성공/긍정:  블루 계열로 통일
+   에러:       레드 (#E24B4A) — 에러 상태에만
+   초록:       완전 제거
+   배경: 흰색 + 라이트그레이 (#F4F6F8)
+   텍스트: 다크 (#191F28) + 미드그레이 (#8B95A1)
+   ─────────────────────────────────────────── */
+:root{
+  --blue:#3182F6;
+  --blue-l:#EBF3FF;
+  --blue-d:#1869C7;
+  --blue-dim:#6DAAF8;
+  --red:#E24B4A;
+  --red-l:#FEF0F0;
+  --bg:#fff;
+  --bg-sub:#F4F6F8;
+  --bg-sub2:#F8F9FA;
+  --t1:#191F28;
+  --t2:#4E5968;
+  --t3:#8B95A1;
+  --border:#E5E8EB;
+  --border2:#F0F2F4;
+
+  --f-xs:clamp(10px,2.6vw,12px);
+  --f-sm:clamp(12px,3.2vw,14px);
+  --f-base:clamp(13px,3.6vw,15px);
+  --f-md:clamp(15px,4.2vw,17px);
+  --f-lg:clamp(18px,5vw,21px);
+  --f-xl:clamp(21px,6vw,26px);
+  --f-2xl:clamp(28px,8vw,36px);
+
+  --sp-xs:clamp(4px,1vw,6px);
+  --sp-sm:clamp(8px,2vw,12px);
+  --sp-md:clamp(12px,3vw,16px);
+  --sp-lg:clamp(16px,4vw,24px);
+  --sp-xl:clamp(24px,6vw,32px);
+
+  --r-sm:10px;
+  --r-md:14px;
+  --r-lg:18px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{height:100dvh;font-family:'Pretendard',-apple-system,sans-serif;background:#E4E9EF;display:flex;align-items:center;justify-content:center;overflow:hidden;}
+.app{width:min(100%,430px);height:100dvh;background:var(--bg);display:flex;flex-direction:column;overflow:hidden;}
+
+/* ── 상단 바 ── */
+.topbar{display:flex;align-items:center;padding:clamp(14px,3.5vw,18px) var(--sp-lg) 0;gap:var(--sp-sm);flex-shrink:0;}
+.back-btn{width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:none;background:transparent;cursor:pointer;padding:0;flex-shrink:0;}
+.back-btn svg{transition:transform .12s;}
+.back-btn:active svg{transform:translateX(-2px);}
+.back-btn.hidden{visibility:hidden;pointer-events:none;}
+.pbar{flex:1;height:2px;background:var(--border2);border-radius:1px;overflow:hidden;}
+.pbar-fill{height:100%;background:var(--blue);border-radius:1px;transition:width .35s ease;}
+.step-txt{font-size:var(--f-xs);color:var(--t3);min-width:28px;text-align:right;flex-shrink:0;}
+
+/* ── 화면 ── */
+.screen{display:none;flex-direction:column;flex:1;min-height:0;animation:fadeUp .18s ease;}
+.screen.active{display:flex;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+.screen.soft{background:var(--bg-sub);}
+.body{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;padding:var(--sp-md) var(--sp-lg) var(--sp-sm);display:flex;flex-direction:column;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+.body::-webkit-scrollbar{display:none;}
+.footer{padding:var(--sp-xs) var(--sp-lg) max(var(--sp-md),env(safe-area-inset-bottom));flex-shrink:0;background:inherit;}
+
+/* ── 칩 ── */
+.chip{display:inline-block;font-size:var(--f-xs);font-weight:600;padding:3px 9px;border-radius:20px;background:var(--blue-l);color:var(--blue-d);margin-bottom:var(--sp-sm);flex-shrink:0;letter-spacing:-.01em;}
+
+/* ── 타이포 ── */
+.q-title{font-size:var(--f-lg);font-weight:700;color:var(--t1);line-height:1.35;margin-bottom:var(--sp-xs);word-break:keep-all;flex-shrink:0;letter-spacing:-.02em;}
+.q-sub{font-size:var(--f-sm);color:var(--t3);line-height:1.55;margin-bottom:var(--sp-md);word-break:keep-all;flex-shrink:0;}
+
+/* ── 선택지 ── */
+.sel-list{display:flex;flex-direction:column;gap:var(--sp-xs);}
+.sel-item{background:var(--bg-sub);border-radius:var(--r-md);padding:clamp(11px,3vw,14px) var(--sp-md);font-size:var(--f-base);color:var(--t1);text-align:center;cursor:pointer;border:1.5px solid transparent;font-weight:500;transition:all .12s;word-break:keep-all;letter-spacing:-.01em;}
+.sel-item:active{transform:scale(.985);}
+.sel-item.selected{background:var(--blue-l);color:var(--blue);font-weight:700;border-color:rgba(49,130,246,.25);}
+.sel-item.dim{color:var(--t3);}
+
+/* ── 입력 ── */
+.input-group{margin-bottom:var(--sp-md);}
+.input-label{font-size:var(--f-xs);color:var(--t3);margin-bottom:var(--sp-xs);font-weight:500;}
+.input-row{display:flex;align-items:center;gap:var(--sp-xs);border-bottom:1.5px solid var(--border);padding-bottom:clamp(7px,1.8vw,10px);transition:border-color .2s;}
+.input-row:focus-within{border-color:var(--blue);}
+.input-row input{flex:1;border:none;outline:none;font-size:var(--f-md);font-family:inherit;color:var(--t1);background:transparent;font-weight:700;min-width:0;}
+.input-row input::placeholder{color:var(--border);font-weight:400;font-size:var(--f-base);}
+.input-unit{font-size:var(--f-sm);color:var(--t3);flex-shrink:0;}
+.input-badge{font-size:var(--f-xs);background:var(--blue-l);color:var(--blue-d);padding:2px 7px;border-radius:6px;font-weight:600;flex-shrink:0;}
+.age-row{display:flex;align-items:baseline;gap:var(--sp-xs);border-bottom:1.5px solid var(--border);padding-bottom:clamp(8px,2vw,12px);margin-bottom:var(--sp-xs);transition:border-color .2s;}
+.age-row:focus-within{border-color:var(--blue);}
+.age-row input{border:none;outline:none;font-size:clamp(30px,8.5vw,40px);font-weight:700;color:var(--t1);background:transparent;font-family:inherit;width:clamp(72px,22vw,110px);letter-spacing:-.02em;}
+.age-unit{font-size:var(--f-md);color:var(--t3);font-weight:500;}
+.age-hint{font-size:var(--f-sm);color:var(--blue);font-weight:600;min-height:20px;margin-top:var(--sp-xs);}
+.skip-hint{font-size:var(--f-xs);color:var(--t3);margin-bottom:var(--sp-sm);}
+
+/* ── 버튼 ── */
+.btn{width:100%;padding:clamp(14px,3.8vw,17px);border-radius:var(--r-md);font-size:var(--f-base);font-weight:700;color:#fff;background:var(--blue);border:none;cursor:pointer;font-family:inherit;transition:opacity .12s,transform .1s;letter-spacing:-.01em;}
+.btn:active{transform:scale(.985);opacity:.9;}
+.btn.dark{background:var(--t1);}
+.btn.secondary{background:var(--bg-sub);color:var(--t2);}
+.btn-row{display:flex;gap:var(--sp-sm);}
+.btn-row .btn{flex:1;}
+
+/* ── 구분선 ── */
+.dv{border:none;border-top:1px solid var(--border2);margin:var(--sp-md) 0;flex-shrink:0;}
+
+/* ── 큰 숫자 ── */
+.big-num{font-size:var(--f-2xl);font-weight:700;color:var(--blue);text-align:center;line-height:1;letter-spacing:-.03em;}
+.big-unit{font-size:var(--f-xs);color:var(--t3);text-align:center;margin-top:4px;}
+
+/* ── 정보 카드 ── */
+.card{border-radius:var(--r-md);padding:var(--sp-sm) var(--sp-md);margin-bottom:var(--sp-sm);}
+.card .lbl{font-size:var(--f-xs);font-weight:500;margin-bottom:3px;}
+.card .val{font-size:var(--f-md);font-weight:700;}
+.card.gray{background:var(--bg-sub);}
+.card.gray .lbl{color:var(--t3);}
+.card.gray .val{color:var(--t1);}
+.card.blue{background:var(--blue-l);}
+.card.blue .lbl{color:var(--blue-d);}
+.card.blue .val{color:var(--blue);}
+.card.red{background:var(--red-l);}
+.card.red .lbl{color:var(--red);}
+.card.red .val{font-size:var(--f-sm);color:var(--red);}
+
+/* ── 배지 ── */
+.badge{display:inline-block;padding:4px 14px;border-radius:20px;font-size:var(--f-sm);font-weight:700;}
+.badge.blue{background:var(--blue-l);color:var(--blue);}
+.badge.red{background:var(--red-l);color:var(--red);}
+
+/* ── 공백기 카드 ── */
+.phase-card{border-radius:var(--r-md);padding:var(--sp-sm) var(--sp-md);border-left:3px solid;}
+.phase-card.p1{background:var(--blue-l);border-color:var(--blue);}
+.phase-card.p1 .pc-lbl{font-size:var(--f-xs);font-weight:600;color:var(--blue-d);margin-bottom:3px;}
+.phase-card.p1 .pc-val{font-size:var(--f-sm);font-weight:700;color:var(--t1);}
+.phase-card.p1 .pc-sub{font-size:var(--f-xs);color:var(--t3);margin-top:3px;line-height:1.4;}
+.phase-card.p2{background:var(--bg-sub);border-color:var(--t3);}
+.phase-card.p2 .pc-lbl{font-size:var(--f-xs);font-weight:600;color:var(--t2);margin-bottom:3px;}
+.phase-card.p2 .pc-val{font-size:var(--f-sm);font-weight:700;color:var(--t1);}
+.phase-card.p2 .pc-sub{font-size:var(--f-xs);color:var(--t3);margin-top:3px;line-height:1.4;}
+
+/* ── 자산 행 (금액+수익률 한 행) ── */
+.ar-row{display:flex;align-items:center;gap:8px;margin-bottom:var(--sp-md);}
+.ar-name{font-size:var(--f-xs);color:var(--t2);font-weight:600;flex:0 0 58px;line-height:1.3;}
+.ar-input{flex:0 0 72px;border:none;border-bottom:1.5px solid var(--border);outline:none;font-size:var(--f-sm);font-weight:700;color:var(--t1);background:transparent;font-family:inherit;padding-bottom:4px;text-align:right;transition:border-color .2s;}
+.ar-input:focus{border-color:var(--blue);}
+.ar-unit{font-size:var(--f-xs);color:var(--t3);flex-shrink:0;}
+.ar-rates{display:flex;gap:3px;flex:1;}
+.ar-rb{flex:1;padding:5px 0;border-radius:6px;background:var(--bg-sub);font-size:var(--f-xs);color:var(--t3);text-align:center;cursor:pointer;border:1.5px solid transparent;font-weight:500;transition:all .12s;}
+.ar-rb.on{background:var(--blue-l);color:var(--blue);font-weight:700;border-color:rgba(49,130,246,.2);}
+.ar-header{display:flex;align-items:center;gap:8px;margin-bottom:8px;padding:0 2px;}
+.ar-header-name{flex:0 0 58px;font-size:var(--f-xs);color:var(--t3);}
+.ar-header-amt{flex:0 0 72px;font-size:var(--f-xs);color:var(--t3);text-align:right;}
+.ar-header-unit{font-size:var(--f-xs);color:transparent;flex-shrink:0;user-select:none;}
+.ar-header-rate{flex:1;font-size:var(--f-xs);color:var(--t3);text-align:center;}
+
+/* ── 추가 버튼 ── */
+.add-row{display:flex;align-items:center;gap:var(--sp-xs);color:var(--blue);font-size:var(--f-sm);font-weight:600;cursor:pointer;padding:var(--sp-xs) 0;margin-bottom:var(--sp-md);}
+.add-ico{width:22px;height:22px;border-radius:50%;background:var(--blue-l);display:flex;align-items:center;justify-content:center;font-size:14px;line-height:1;flex-shrink:0;}
+
+/* ── 인라인 추가 입력 ── */
+.inline-add{background:var(--bg-sub);border-radius:var(--r-md);padding:var(--sp-sm) var(--sp-md);margin-bottom:var(--sp-md);display:none;}
+.inline-add.open{display:block;}
+.inline-add-title{font-size:var(--f-xs);font-weight:600;color:var(--t2);margin-bottom:var(--sp-sm);}
+.inline-add-row{display:flex;gap:var(--sp-sm);align-items:flex-end;}
+.inline-add-row input{flex:1;border:none;border-bottom:1.5px solid var(--border);outline:none;font-size:var(--f-base);font-family:inherit;color:var(--t1);background:transparent;padding-bottom:6px;font-weight:600;}
+.inline-add-row input::placeholder{color:var(--border);font-weight:400;}
+.inline-add-row .confirm-btn{padding:8px 16px;border-radius:var(--r-sm);background:var(--blue);color:#fff;border:none;font-size:var(--f-xs);font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;}
+
+/* ── 격려 화면 ── */
+.enc{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:var(--sp-xl) var(--sp-lg) var(--sp-sm);text-align:center;gap:var(--sp-sm);}
+.enc .icon{font-size:clamp(52px,14vw,72px);}
+.enc .t{font-size:var(--f-xl);font-weight:700;color:var(--t1);letter-spacing:-.02em;word-break:keep-all;}
+.enc .s{font-size:var(--f-base);color:var(--t3);line-height:1.6;word-break:keep-all;}
+
+/* ── 박수 ── */
+.clap-wrap{position:relative;width:clamp(90px,22vw,120px);height:clamp(90px,22vw,120px);display:flex;align-items:center;justify-content:center;}
+.clap-emoji{font-size:clamp(54px,14vw,72px);position:relative;z-index:1;}
+@keyframes burst{0%{opacity:1;transform:translate(0,0) scale(1);}100%{opacity:0;transform:translate(var(--dx),var(--dy)) scale(.2);}}
+.dot{position:absolute;top:50%;left:50%;width:6px;height:6px;border-radius:50%;margin:-3px 0 0 -3px;animation:burst .9s ease-out infinite;}
+.d1{background:#3B82F6;--dx:-38px;--dy:-32px;animation-delay:0s;}
+.d2{background:#93C5FD;--dx:-18px;--dy:-48px;animation-delay:.09s;}
+.d3{background:#EF4444;--dx:34px;--dy:-30px;animation-delay:.04s;}
+.d4{background:#FCA5A5;--dx:20px;--dy:-48px;animation-delay:.13s;}
+.d5{background:#F59E0B;--dx:-40px;--dy:22px;animation-delay:.06s;}
+.d6{background:#FCD34D;--dx:-20px;--dy:44px;animation-delay:.15s;}
+.d7{background:#818CF8;--dx:36px;--dy:26px;animation-delay:.02s;}
+.d8{background:#A5B4FC;--dx:18px;--dy:46px;animation-delay:.11s;}
+.d9{background:#EC4899;--dx:-6px;--dy:-50px;animation-delay:.05s;}
+.d10{background:#F9A8D4;--dx:6px;--dy:50px;animation-delay:.10s;}
+.d11{background:#EF4444;--dx:-48px;--dy:4px;animation-delay:.03s;}
+.d12{background:#3B82F6;--dx:48px;--dy:-4px;animation-delay:.08s;}
+.d13{background:#818CF8;--dx:-28px;--dy:-42px;animation-delay:.12s;}
+.d14{background:#F59E0B;--dx:28px;--dy:42px;animation-delay:.01s;}
+.d15{background:#EC4899;--dx:44px;--dy:16px;animation-delay:.14s;}
+.d16{background:#93C5FD;--dx:-44px;--dy:-16px;animation-delay:.07s;}
+
+/* ── 슬라이더 ── */
+.sl-group{margin-bottom:var(--sp-md);}
+.sl-top{display:flex;justify-content:space-between;margin-bottom:5px;align-items:center;}
+.sl-name{font-size:var(--f-sm);color:var(--t2);}
+.sl-val{font-size:var(--f-sm);font-weight:700;color:var(--t1);}
+.sl-wrap{position:relative;height:20px;display:flex;align-items:center;}
+.sl-bg{position:absolute;left:0;right:0;height:3px;background:var(--border);border-radius:2px;pointer-events:none;}
+.sl-fill{position:absolute;left:0;height:3px;background:var(--blue);border-radius:2px;pointer-events:none;transition:width .04s;}
+input[type=range]{width:100%;position:relative;z-index:1;-webkit-appearance:none;appearance:none;background:transparent;height:20px;cursor:pointer;}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:var(--blue);border:2.5px solid #fff;box-shadow:0 1px 5px rgba(0,0,0,.18);}
+
+/* ── 리포트 항목 ── */
+.rpt-item{display:flex;align-items:center;gap:var(--sp-sm);padding:11px 0;border-bottom:1px solid var(--border2);}
+.rpt-item:last-child{border-bottom:none;}
+.rpt-lbl{flex:1;font-size:var(--f-sm);color:var(--t2);font-weight:500;}
+.rpt-val{font-size:var(--f-sm);font-weight:700;color:var(--t1);text-align:right;}
+.rpt-edit{font-size:var(--f-xs);color:var(--blue);cursor:pointer;padding:3px 8px;background:var(--blue-l);border-radius:6px;white-space:nowrap;flex-shrink:0;}
+
+/* ── 총합 카드 ── */
+.total-card{background:var(--blue-l);border-radius:var(--r-lg);padding:var(--sp-md) var(--sp-lg);margin-bottom:var(--sp-md);}
+.total-inner{display:flex;justify-content:space-between;align-items:flex-end;}
+.tc-col .tc-lbl{font-size:var(--f-xs);color:var(--blue-d);margin-bottom:4px;}
+.tc-col .tc-num{font-size:var(--f-xl);font-weight:700;color:var(--blue);line-height:1;letter-spacing:-.02em;}
+.tc-col.right{text-align:right;}
+.tc-sub{margin-top:var(--sp-sm);display:flex;justify-content:flex-end;}
+.tc-sub-txt{font-size:var(--f-xs);color:var(--t3);}
+.tc-sub-val{font-size:var(--f-xs);font-weight:700;color:var(--blue-dim);}
+
+/* ── 주택연금 토글 ── */
+.housing-toggle{display:flex;align-items:center;gap:var(--sp-sm);background:var(--bg-sub);border-radius:var(--r-md);padding:var(--sp-sm) var(--sp-md);margin-bottom:var(--sp-sm);cursor:pointer;}
+.ht-icon{font-size:20px;flex-shrink:0;}
+.ht-text{flex:1;}
+.ht-title{font-size:var(--f-base);font-weight:600;color:var(--t1);margin-bottom:2px;}
+.ht-sub{font-size:var(--f-xs);color:var(--t3);}
+.toggle-switch{width:42px;height:24px;border-radius:12px;background:var(--border);position:relative;transition:background .2s;flex-shrink:0;cursor:pointer;}
+.toggle-switch.on{background:var(--blue);}
+.toggle-knob{width:18px;height:18px;border-radius:50%;background:#fff;position:absolute;top:3px;left:3px;transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.2);}
+.toggle-switch.on .toggle-knob{left:21px;}
+.housing-detail{display:none;background:var(--bg-sub);border-radius:var(--r-md);padding:var(--sp-md);margin-bottom:var(--sp-sm);}
+.housing-detail.open{display:block;}
+.housing-result{margin-top:var(--sp-sm);background:#fff;border-radius:var(--r-sm);padding:var(--sp-sm) var(--sp-md);}
+.housing-result .h-lbl{font-size:var(--f-xs);color:var(--t3);margin-bottom:3px;}
+.housing-result .h-val{font-size:var(--f-md);font-weight:700;color:var(--blue);}
+
+/* ── 기대수명 화면 ── */
+.life-screen-note{font-size:var(--f-xs);color:var(--t3);text-align:center;margin-top:var(--sp-sm);}
+
+/* ── 액션 버튼 ── */
+.action-row{display:flex;gap:var(--sp-sm);}
+.action-btn{flex:1;background:var(--bg-sub);border-radius:var(--r-md);padding:var(--sp-sm) var(--sp-xs);text-align:center;cursor:pointer;transition:background .12s;}
+.action-btn:active{background:var(--border);}
+.action-btn .a-icon{font-size:20px;margin-bottom:3px;}
+.action-btn .a-txt{font-size:var(--f-xs);color:var(--t3);font-weight:500;}
+
+/* ── calc-box ── */
+.calc-box{background:var(--bg-sub2);border-radius:var(--r-sm);padding:var(--sp-sm) var(--sp-md);font-size:var(--f-sm);color:var(--t3);line-height:1.85;}
+.calc-box strong{color:var(--t1);}
+.calc-row{display:flex;justify-content:space-between;align-items:baseline;}
+.calc-row + .calc-row{margin-top:4px;}
+.calc-label{color:var(--t3);}
+.calc-value{font-weight:700;color:var(--t1);}
+</style>
+</head>
+<body>
+<div class="app" id="APP">
+
+  <!-- 상단 바 -->
+  <div class="topbar">
+    <button class="back-btn hidden" id="backBtn" onclick="goBack()" aria-label="뒤로">
+      <svg width="8" height="14" viewBox="0 0 8 14" fill="none">
+        <path d="M7 1L1 7L7 13" stroke="#191F28" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
+    <div class="pbar"><div class="pbar-fill" id="pf" style="width:0%"></div></div>
+    <div class="step-txt" id="stepTxt"></div>
+  </div>
+
+  <!-- S0 인트로 -->
+  <div class="screen active" id="s0">
+    <div class="enc" style="padding-top:var(--sp-xl);">
+      <div class="icon">🏖️</div>
+      <div class="t">은퇴 준비<br>얼마나 됐을까요?</div>
+      <div class="s">자산을 유지하면서 배당으로 생활하는<br>자산유지형 은퇴 전략이에요</div>
+    </div>
+    <div class="footer">
+      <button class="btn" onclick="go('s1')">시작할게요</button>
+      <div style="text-align:center;margin-top:14px;">
+        <span style="font-size:var(--f-sm);color:var(--t3);cursor:pointer;text-decoration:underline;text-underline-offset:3px;" onclick="showLoadModal()">이전에 저장한 내용 불러오기</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- S1 은퇴 나이 -->
+  <div class="screen" id="s1">
+    <div class="body">
+      <div class="chip">목표 설정</div>
+      <div class="q-title">몇 살에 은퇴하고 싶으세요?</div>
+      <div class="sel-list" style="flex:1;">
+        <div class="sel-item" onclick="pickAge(this,50)">50살</div>
+        <div class="sel-item" onclick="pickAge(this,55)">55살</div>
+        <div class="sel-item" onclick="pickAge(this,60)">60살</div>
+        <div class="sel-item" onclick="pickAge(this,65)">65살 이상</div>
+        <div class="sel-item dim" onclick="pickAge(this,0)">직접 입력할게요</div>
+      </div>
+      <div id="customAgeBox" style="display:none;margin-top:var(--sp-md);">
+        <div class="age-row"><input type="number" id="customAge" placeholder="0" min="40" max="80" inputmode="numeric" oninput="S.retireAge=+this.value"><span class="age-unit">살</span></div>
+        <button class="btn" style="margin-top:var(--sp-md);" onclick="if(S.retireAge>0)go('s2')">다음</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- S2 현재 나이 -->
+  <div class="screen" id="s2">
+    <div class="body">
+      <div class="chip">목표 설정</div>
+      <div class="q-title">지금 몇 살이에요?</div>
+      <div class="q-sub">은퇴까지 남은 기간을 계산해드릴게요</div>
+      <div class="age-row"><input type="number" id="nowAge" placeholder="0" min="20" max="70" inputmode="numeric" oninput="calcYears()"><span class="age-unit">살</span></div>
+      <div class="age-hint" id="yearHint"></div>
+    </div>
+    <div class="footer"><button class="btn" onclick="goS3()">맞아요</button></div>
+  </div>
+
+  <!-- S3 월 생활비 -->
+  <div class="screen" id="s3">
+    <div class="body">
+      <div class="chip">목표 설정</div>
+      <div class="q-title">한 달 생활비<br>얼마면 충분할까요?</div>
+      <div class="sel-list" style="flex:1;">
+        <div class="sel-item" onclick="pickMonthly(this,200)">200만원</div>
+        <div class="sel-item" onclick="pickMonthly(this,300)">300만원</div>
+        <div class="sel-item" onclick="pickMonthly(this,400)">400만원</div>
+        <div class="sel-item" onclick="pickMonthly(this,500)">500만원 이상</div>
+        <div class="sel-item dim" onclick="pickMonthly(this,0)">직접 입력할게요</div>
+      </div>
+      <div id="customMonthlyBox" style="display:none;margin-top:var(--sp-md);">
+        <div class="input-row"><input type="number" id="customMonthly" placeholder="0" inputmode="numeric" oninput="S.monthly=+this.value"><span class="input-unit">만원/월</span></div>
+        <button class="btn" style="margin-top:var(--sp-md);" onclick="S.monthly=+(document.getElementById('customMonthly').value||0);doCalcTarget();go('s4')">다음</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- S4 목표자산 -->
+  <div class="screen" id="s4">
+    <div class="body">
+      <div class="chip">목표 설정</div>
+      <div class="q-title" id="s4Title">매월 300만원 받으려면<br>은퇴 시 이만큼 필요해요</div>
+      <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:var(--sp-sm);">
+        <div class="big-num" id="s4Num">7억 2천</div>
+        <div class="big-unit">연 5% 배당 기준 · 현재가치</div>
+        <hr class="dv">
+        <div class="calc-box" id="s4Calc"></div>
+      </div>
+    </div>
+    <div class="footer"><button class="btn" onclick="go('s5')">알겠어요</button></div>
+  </div>
+
+  <!-- S5 격려1 -->
+  <div class="screen soft" id="s5">
+    <div class="enc">
+      <div class="icon">😮</div>
+      <div class="t">많아 보이죠?</div>
+      <div class="s">걱정 마세요.<br>지금부터 같이 살펴볼게요</div>
+    </div>
+    <div class="footer"><button class="btn dark" onclick="go('s6')">계속할게요</button></div>
+  </div>
+
+  <!-- S6 국민연금 -->
+  <div class="screen" id="s6">
+    <div class="body">
+      <div class="chip">연금 파악</div>
+      <div class="q-title">국민연금 얼마 받을 것 같으세요?</div>
+      <div class="q-sub">국민연금 홈페이지에서 예상 수령액을 확인할 수 있어요</div>
+      <div class="input-group">
+        <div class="input-label">월 예상 수령액</div>
+        <div class="input-row"><input type="number" id="pension" placeholder="0" inputmode="numeric" oninput="S.pension=+this.value"><span class="input-unit">만원/월</span></div>
+      </div>
+      <div class="skip-hint">모르면 0으로 입력해도 돼요</div>
+    </div>
+    <div class="footer"><button class="btn" onclick="doPension()">입력했어요</button></div>
+  </div>
+
+  <!-- S7 공백기 + 목표자산 -->
+  <div class="screen" id="s7">
+    <div class="body">
+      <div class="chip">연금 파악</div>
+      <div class="q-title">실제 필요한 자산이에요</div>
+      <div class="q-sub">연금 수급 전 공백기까지 함께 계산했어요</div>
+      <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:var(--sp-sm);">
+        <!-- 2단계 설명 -->
+        <div class="phase-card p2" style="margin-bottom:0;">
+          <div class="pc-lbl">① 연금 수급 후 — 배당형 목표자산</div>
+          <div class="pc-val" id="s7after">월 178만원 ÷ 5% = 4억 2,720만원</div>
+          <div class="pc-sub" id="s7after-sub">이 자산에서 연 5% 배당으로 생활비를 충당해요</div>
+        </div>
+        <div class="phase-card p1">
+          <div class="pc-lbl">② 공백기 (<span id="s7gy">5</span>년) — 별도 확보 필요</div>
+          <div class="pc-val" id="s7gap">2억 8,800만원 별도 필요해요</div>
+          <div class="pc-sub" id="s7gap-sub">배당금을 빼고도 부족한 월 220만원 × 5년을 따로 마련해야 해요</div>
+        </div>
+        <hr class="dv">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <div style="font-size:var(--f-xs);color:var(--t3);margin-bottom:4px;">총 필요 자산</div>
+            <div style="font-size:var(--f-xl);font-weight:700;color:var(--t1);letter-spacing:-.02em;" id="s7total">6억 5,520만원</div>
+          </div>
+          <div style="background:var(--blue-l);border-radius:var(--r-sm);padding:6px 12px;text-align:center;">
+            <div style="font-size:var(--f-xs);color:var(--blue-d);" id="s7cmp-top">7.2억보다</div>
+            <div style="font-size:var(--f-sm);font-weight:700;color:var(--blue);" id="s7cmp-bot">줄었어요</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="footer"><button class="btn" onclick="go('s8')">좋아요</button></div>
+  </div>
+
+  <!-- S8 현재 자산 (금액만) -->
+  <div class="screen" id="s8">
+    <div class="body">
+      <div class="chip">현재 자산</div>
+      <div class="q-title">지금 모아 둔 돈을 알려주세요</div>
+      <div class="q-sub" style="margin-bottom:var(--sp-sm);">금액을 입력하면 다음 화면에서 수익률을 설정해요</div>
+      <div id="assetAmtRows"></div>
+      <!-- 인라인 추가 -->
+      <div class="inline-add" id="assetAddBox">
+        <div class="inline-add-title">추가할 자산 이름과 금액을 입력해주세요</div>
+        <div class="inline-add-row">
+          <input type="text" id="addAssetName" placeholder="자산 이름 (예: 해외ETF)">
+          <input type="number" id="addAssetAmt" placeholder="0" inputmode="numeric" style="max-width:90px;">
+          <button class="confirm-btn" onclick="confirmAddAsset()">추가</button>
+        </div>
+      </div>
+      <div class="add-row" onclick="toggleAssetAdd()"><div class="add-ico">+</div><span>기타 자산 추가하기</span></div>
+    </div>
+    <div class="footer"><button class="btn" onclick="go('s8b')">입력했어요</button></div>
+  </div>
+
+  <!-- S8b 현재 자산 수익률 -->
+  <div class="screen" id="s8b">
+    <div class="body">
+      <div class="chip">현재 자산</div>
+      <div class="q-title">목표 수익률은요?</div>
+      <div class="q-sub" style="margin-bottom:var(--sp-sm);">각 자산의 연 목표 수익률을 선택해주세요</div>
+      <div style="flex:1;display:flex;flex-direction:column;justify-content:center;">
+        <div id="assetRateRows"></div>
+      </div>
+    </div>
+    <div class="footer"><button class="btn" onclick="doAsset()">선택했어요</button></div>
+  </div>
+
+  <!-- S9 격려 (자산) -->
+  <div class="screen soft" id="s9">
+    <div class="enc">
+      <div class="clap-wrap">
+        <div class="dot d1"></div><div class="dot d2"></div><div class="dot d3"></div><div class="dot d4"></div>
+        <div class="dot d5"></div><div class="dot d6"></div><div class="dot d7"></div><div class="dot d8"></div>
+        <div class="dot d9"></div><div class="dot d10"></div><div class="dot d11"></div><div class="dot d12"></div>
+        <div class="dot d13"></div><div class="dot d14"></div><div class="dot d15"></div><div class="dot d16"></div>
+        <div class="clap-emoji">👏</div>
+      </div>
+      <div class="t">많이 모았네요!</div>
+      <div class="s" id="s9sub">지금 모은 돈은 은퇴 시점에<br><strong style="color:var(--blue);">5억 8천</strong>이 돼요<br>이미 목표의 <strong style="color:var(--blue);">89%</strong> 달성했어요</div>
+    </div>
+    <div class="footer"><button class="btn" onclick="go('s10')">계속할게요</button></div>
+  </div>
+
+  <!-- S10 DB 퇴직금 -->
+  <div class="screen" id="s10">
+    <div class="body">
+      <div class="chip">현재 자산</div>
+      <div class="q-title">퇴직금이 있으신가요?</div>
+      <div class="q-sub">DB형 퇴직금일 경우 입력해주세요</div>
+      <div class="input-group"><div class="input-row"><input type="number" id="a_db" placeholder="0" inputmode="numeric" oninput="S.a_db=+this.value"><span class="input-unit">만원</span></div></div>
+    </div>
+    <div class="footer">
+      <div class="btn-row">
+        <button class="btn secondary" onclick="S.a_db=0;go('s11')">건너뛸게요</button>
+        <button class="btn" onclick="go('s11')">입력했어요</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- S11 월 투자 (금액) -->
+  <div class="screen" id="s11">
+    <div class="body">
+      <div class="chip">월 투자</div>
+      <div class="q-title">매월 투자하시나요?</div>
+      <div class="q-sub" style="margin-bottom:var(--sp-sm);">성과급·상여금은 다음 화면에서 따로 입력해요</div>
+      <div id="monthlyAmtRows"></div>
+      <div class="inline-add" id="monthlyAddBox">
+        <div class="inline-add-title">추가할 투자 항목 이름과 금액을 입력해주세요</div>
+        <div class="inline-add-row">
+          <input type="text" id="addMonthlyName" placeholder="항목 이름 (예: 리츠)">
+          <input type="number" id="addMonthlyAmt" placeholder="0" inputmode="numeric" style="max-width:90px;">
+          <button class="confirm-btn" onclick="confirmAddMonthly()">추가</button>
+        </div>
+      </div>
+      <div class="add-row" onclick="toggleMonthlyAdd()"><div class="add-ico">+</div><span>항목 추가하기</span></div>
+    </div>
+    <div class="footer"><button class="btn" onclick="go('s11b')">입력했어요</button></div>
+  </div>
+
+  <!-- S11b 월 투자 수익률 -->
+  <div class="screen" id="s11b">
+    <div class="body">
+      <div class="chip">월 투자</div>
+      <div class="q-title">월 투자 목표 수익률은요?</div>
+      <div style="flex:1;display:flex;flex-direction:column;justify-content:center;">
+        <div id="monthlyRateRows"></div>
+      </div>
+    </div>
+    <div class="footer"><button class="btn" onclick="go('s12')">선택했어요</button></div>
+  </div>
+
+  <!-- S12 성과급 -->
+  <div class="screen" id="s12">
+    <div class="body">
+      <div class="chip">성과급 · 상여금</div>
+      <div class="q-title">성과급이나 상여금 있으세요?</div>
+      <div class="q-sub">투자할 연간 금액과 기대 수익률을 알려주세요</div>
+      <div class="input-group"><div class="input-label">연간 투자 금액</div><div class="input-row"><input type="number" id="bonus" placeholder="0" inputmode="numeric" oninput="S.bonus=+this.value"><span class="input-unit">만원/년</span></div></div>
+      <hr class="dv">
+      <div style="font-size:var(--f-base);font-weight:700;color:var(--t1);margin-bottom:var(--sp-sm);">기대 연수익률은요?</div>
+      <div style="display:flex;gap:6px;" id="bonusRates">
+        <div class="ar-rb" data-v="3" onclick="setBonus(3,this)">3%</div>
+        <div class="ar-rb on" data-v="5" onclick="setBonus(5,this)">5%</div>
+        <div class="ar-rb" data-v="7" onclick="setBonus(7,this)">7%</div>
+        <div class="ar-rb" data-v="10" onclick="setBonus(10,this)">10%</div>
+        <div class="ar-rb" data-v="15" onclick="setBonus(15,this)">15%</div>
+      </div>
+    </div>
+    <div class="footer">
+      <div class="btn-row">
+        <button class="btn secondary" onclick="S.bonus=0;doFinal()">없어요</button>
+        <button class="btn" onclick="doFinal()">있어요</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- S13 결과 -->
+  <div class="screen" id="s13">
+    <div class="body">
+      <div class="chip">결과</div>
+      <div class="q-title" style="text-align:center;margin-bottom:var(--sp-sm);">은퇴 시점 예상 자산이에요</div>
+      <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:var(--sp-sm);">
+        <div class="big-num" id="s13tot">8억 4천</div>
+        <div style="text-align:center;font-size:var(--f-sm);color:var(--t3);">vs 목표 <span id="s13tgt" style="color:var(--t2);font-weight:600;">6억 5천</span></div>
+        <div style="text-align:center;margin-bottom:var(--sp-xs);"><span class="badge blue" id="s13badge">달성 가능해요 +29%</span></div>
+        <hr class="dv">
+        <div class="card gray">
+          <div class="lbl">예상 월 생활비 (연 5% 배당 기준)</div>
+          <div class="val" id="s13mi" style="color:var(--blue);">약 350만원</div>
+        </div>
+        <div class="card" id="s13riCard">
+          <div class="lbl">물가 2% 반영 시 실질 구매력</div>
+          <div class="val" id="s13ri">월 257만원 · 목표 대비 −43만원</div>
+        </div>
+      </div>
+    </div>
+    <div class="footer"><button class="btn" onclick="go('s14')">리포트 볼게요</button></div>
+  </div>
+
+  <!-- S14 훌륭해요 -->
+  <div class="screen soft" id="s14">
+    <div class="enc">
+      <div class="clap-wrap">
+        <div class="dot d1"></div><div class="dot d2"></div><div class="dot d3"></div><div class="dot d4"></div>
+        <div class="dot d5"></div><div class="dot d6"></div><div class="dot d7"></div><div class="dot d8"></div>
+        <div class="dot d9"></div><div class="dot d10"></div><div class="dot d11"></div><div class="dot d12"></div>
+        <div class="dot d13"></div><div class="dot d14"></div><div class="dot d15"></div><div class="dot d16"></div>
+        <div class="clap-emoji">👏</div>
+      </div>
+      <div class="t">훌륭해요!</div>
+      <div class="s">은퇴 목표를 충분히 달성할 수 있어요<br><strong style="color:var(--blue);">리포트를 확인해볼까요?</strong></div>
+    </div>
+    <div class="footer"><button class="btn" onclick="go('s15')">리포트 보러 갈게요</button></div>
+  </div>
+
+  <!-- S15 리포트 -->
+  <div class="screen" id="s15" style="background:var(--bg);">
+    <div class="body" id="reportCapture" style="padding-bottom:var(--sp-sm);">
+      <div class="chip">리포트</div>
+
+      <!-- 총합 (단일, 수정 시 함께 업데이트) -->
+      <div class="total-card" id="totalCard">
+        <div class="total-inner">
+          <div class="tc-col">
+            <div class="tc-lbl">예상 총자산</div>
+            <div class="tc-num" id="rc_tot">9억 2천</div>
+          </div>
+          <div class="tc-col right">
+            <div class="tc-lbl">예상 월 생활비</div>
+            <div class="tc-num" id="rc_mi" style="font-size:var(--f-lg);">384만원</div>
+          </div>
+        </div>
+        <div class="tc-sub">
+          <span class="tc-sub-txt">물가 2% 반영 실질 구매력&nbsp;</span>
+          <span class="tc-sub-val" id="rc_ri">월 281만원</span>
+        </div>
+      </div>
+
+      <!-- 주택연금 토글 (리포트 내) -->
+      <div class="housing-toggle" onclick="toggleHousing()">
+        <div class="ht-icon">🏠</div>
+        <div class="ht-text">
+          <div class="ht-title">주택연금 추가하기</div>
+          <div class="ht-sub" id="housingToggleSub">집을 담보로 매달 연금을 더 받을 수 있어요</div>
+        </div>
+        <div class="toggle-switch" id="housingSwitch"><div class="toggle-knob"></div></div>
+      </div>
+      <div class="housing-detail" id="housingDetail">
+        <div class="input-group" style="margin-bottom:var(--sp-sm);">
+          <div class="input-label">주택 시세</div>
+          <div class="input-row"><input type="number" id="houseVal" placeholder="0" inputmode="numeric" oninput="calcHousing()"><span class="input-unit">만원</span></div>
+        </div>
+        <div class="input-group" style="margin-bottom:var(--sp-sm);">
+          <div class="input-label">가입 예정 나이</div>
+          <div class="input-row"><input type="number" id="housingAge" placeholder="70" value="70" inputmode="numeric" oninput="calcHousing()"><span class="input-unit">살</span></div>
+        </div>
+        <div class="housing-result">
+          <div class="h-lbl">예상 월 수령액 (공시가 기준)</div>
+          <div class="h-val" id="housingResult">주택 시세를 입력해주세요</div>
+        </div>
+      </div>
+
+      <hr class="dv">
+
+      <!-- 입력값 요약 (수정 링크) — 현재 자산까지 -->
+      <div style="font-size:var(--f-base);font-weight:700;color:var(--t1);margin-bottom:var(--sp-sm);">입력한 값이에요</div>
+      <div id="reportSummary" style="margin-bottom:var(--sp-md);"></div>
+
+      <!-- 내 투자 조정해볼까요? — 월투자 항목 -->
+      <div style="font-size:var(--f-base);font-weight:700;color:var(--t1);margin-bottom:var(--sp-xs);">내 투자 조정해볼까요?</div>
+      <div class="q-sub" style="margin-bottom:var(--sp-md);">슬라이더를 움직이면 총자산이 바로 바뀌어요</div>
+
+      <!-- 월 투자 항목 슬라이더 -->
+      <div id="adjustRows"></div>
+
+      <!-- 성과급 -->
+      <div class="sl-group" id="bonusSliderGroup" style="display:none;">
+        <div class="sl-top">
+          <span class="sl-name">성과급·상여금</span>
+          <span style="display:flex;align-items:center;gap:5px;">
+            <span style="font-size:var(--f-xs);color:var(--t3);">수익률</span>
+            <span style="display:flex;gap:3px;" id="bonusAdjRates">
+              <span class="ar-rb" style="padding:2px 7px;font-size:var(--f-xs);" onclick="setBonusAdj(3,this)">3%</span>
+              <span class="ar-rb on" style="padding:2px 7px;font-size:var(--f-xs);" onclick="setBonusAdj(5,this)">5%</span>
+              <span class="ar-rb" style="padding:2px 7px;font-size:var(--f-xs);" onclick="setBonusAdj(7,this)">7%</span>
+              <span class="ar-rb" style="padding:2px 7px;font-size:var(--f-xs);" onclick="setBonusAdj(10,this)">10%</span>
+              <span class="ar-rb" style="padding:2px 7px;font-size:var(--f-xs);" onclick="setBonusAdj(15,this)">15%</span>
+            </span>
+          </span>
+        </div>
+        <div class="sl-wrap"><div class="sl-bg"></div><div class="sl-fill" id="adj_bonus_f" style="width:0%"></div>
+          <input type="range" min="0" max="5000" step="100" value="0" oninput="onBonusSlider(this)"></div>
+        <div style="display:flex;justify-content:space-between;margin-top:3px;">
+          <span style="font-size:var(--f-xs);color:var(--t3);">0</span>
+          <span style="font-size:var(--f-xs);font-weight:600;color:var(--t2);" id="adj_bonus_l">0만원/년</span>
+        </div>
+      </div>
+
+      <!-- 물가 + 국민연금 수급 나이 -->
+      <div class="sl-group">
+        <div class="sl-top"><span class="sl-name">물가 상승률</span><span class="sl-val" id="rv_infl">2%</span></div>
+        <div class="sl-wrap"><div class="sl-bg"></div><div class="sl-fill" id="rf_infl" style="width:20%;background:var(--t3);"></div>
+          <input type="range" min="0" max="10" step="0.5" value="2" oninput="onInfl(this)"></div>
+      </div>
+      <div class="sl-group">
+        <div class="sl-top"><span class="sl-name">국민연금 수급 나이</span><span class="sl-val" id="rv_pension">65살</span></div>
+        <div class="sl-wrap"><div class="sl-bg"></div><div class="sl-fill" id="rf_pension" style="width:50%;background:var(--blue-dim);"></div>
+          <input type="range" min="60" max="70" step="1" value="65" oninput="onPension(this)">
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-top:3px;"><span style="font-size:var(--f-xs);color:var(--t3);">60살</span><span style="font-size:var(--f-xs);color:var(--t3);">70살</span></div>
+      </div>
+
+      <hr class="dv">
+
+      <div class="action-row">
+        <div class="action-btn" onclick="doShare()"><div class="a-icon">🔗</div><div class="a-txt">공유</div></div>
+        <div class="action-btn" onclick="showSaveModal()"><div class="a-icon">💾</div><div class="a-txt">저장</div></div>
+        <div class="action-btn" onclick="showLoadModal()"><div class="a-icon">📂</div><div class="a-txt">불러오기</div></div>
+      </div>
+      <div style="text-align:center;margin-top:16px;padding-bottom:4px;">
+        <span style="font-size:var(--f-xs);color:var(--t3);cursor:pointer;text-decoration:underline;text-underline-offset:3px;" onclick="doReset()">처음부터 다시 하기</span>
+      </div>
+    </div>
+  </div>
+
+<!-- ── 저장 모달 ── -->
+<div id="saveModal" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center;" onclick="if(event.target===this)closeSaveModal()">
+  <div style="width:min(100%,430px);background:#fff;border-radius:20px 20px 0 0;padding:28px 24px max(28px,env(safe-area-inset-bottom));display:none;" id="saveSheet">
+    <div style="width:36px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 24px;"></div>
+    <div style="font-size:var(--f-lg);font-weight:700;color:var(--t1);margin-bottom:6px;">비밀번호로 저장할게요</div>
+    <div style="font-size:var(--f-sm);color:var(--t3);margin-bottom:20px;">숫자 4~6자리를 설정하면<br>나중에 다시 불러올 수 있어요</div>
+    <div style="border-bottom:1.5px solid var(--border);display:flex;align-items:center;gap:8px;padding-bottom:10px;margin-bottom:8px;transition:border-color .2s;" id="savePwRow">
+      <input type="number" id="savePwInput" placeholder="비밀번호 입력 (숫자 4~6자리)" inputmode="numeric" maxlength="6"
+        style="flex:1;border:none;outline:none;font-size:var(--f-md);font-weight:700;color:var(--t1);background:transparent;font-family:inherit;"
+        onfocus="document.getElementById('savePwRow').style.borderColor='var(--blue)'"
+        onblur="document.getElementById('savePwRow').style.borderColor='var(--border)'">
+    </div>
+    <div style="font-size:var(--f-xs);color:var(--t3);margin-bottom:24px;">같은 번호로 다시 저장하면 덮어씌워져요</div>
+    <button class="btn" onclick="doSaveToSheet()">데이터 저장할게요</button>
+    <button class="btn secondary" style="margin-top:8px;" onclick="closeSaveModal();doCapture()">이미지로 저장할게요</button>
+    <div style="text-align:center;margin-top:14px;">
+      <span style="font-size:var(--f-sm);color:var(--t3);cursor:pointer;" onclick="closeSaveModal()">취소</span>
+    </div>
+  </div>
+</div>
+
+<!-- ── 불러오기 모달 ── -->
+<div id="loadModal" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.45);" onclick="if(event.target===this)closeLoadModal()">
+  <div style="position:absolute;bottom:0;width:min(100%,430px);left:50%;transform:translateX(-50%);background:#fff;border-radius:20px 20px 0 0;padding:28px 24px max(28px,env(safe-area-inset-bottom));" id="loadSheet">
+    <div style="width:36px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 24px;"></div>
+    <div style="font-size:var(--f-lg);font-weight:700;color:var(--t1);margin-bottom:6px;">저장한 내용 불러오기</div>
+    <div style="font-size:var(--f-sm);color:var(--t3);margin-bottom:20px;">저장할 때 설정한 비밀번호를 입력해주세요</div>
+    <div style="border-bottom:1.5px solid var(--border);display:flex;align-items:center;gap:8px;padding-bottom:10px;margin-bottom:8px;transition:border-color .2s;" id="loadPwRow">
+      <input type="number" id="loadPwInput" placeholder="비밀번호 입력" inputmode="numeric"
+        style="flex:1;border:none;outline:none;font-size:var(--f-md);font-weight:700;color:var(--t1);background:transparent;font-family:inherit;"
+        onfocus="document.getElementById('loadPwRow').style.borderColor='var(--blue)'"
+        onblur="document.getElementById('loadPwRow').style.borderColor='var(--border)'"
+        onkeydown="if(event.key==='Enter')doLoadFromSheet()">
+    </div>
+    <div id="loadErrMsg" style="font-size:var(--f-xs);color:var(--red);min-height:18px;margin-bottom:16px;"></div>
+    <button class="btn" onclick="doLoadFromSheet()">불러올게요</button>
+    <div style="text-align:center;margin-top:14px;">
+      <span style="font-size:var(--f-sm);color:var(--t3);cursor:pointer;" onclick="closeLoadModal()">취소</span>
+    </div>
+  </div>
+</div>
+
+</div><!-- /app -->
+
+<script>
+// ────────────────────────────────────────────
+// 상태
+// ────────────────────────────────────────────
+const S = {
+  retireAge:60, nowAge:0, lifeAge:90, years:0,
+  monthly:300, pension:0, pensionAge:65,
+  targetGap:0, targetAfter:0, finalTarget:0,
+  assets:[], a_db:0,
+  monthlyInvests:[],
+  bonus:0, br:5,
+  inflation:2,
+  housingMonthly:0, housingOn:false,
+  totalAtRetire:0, _assetFV:0,
+};
+
+const DEFAULT_ASSETS = [
+  {name:'주식 · ETF', amount:0, rate:5},
+  {name:'적금 · 예금', amount:0, rate:3},
+  {name:'퇴직금 DC',  amount:0, rate:5},
+  {name:'크립토',     amount:0, rate:10},
+];
+const DEFAULT_MONTHLY = [
+  {name:'주식 · ETF', amount:0, rate:5},
+  {name:'적금',       amount:0, rate:3},
+  {name:'퇴직금 DC',  amount:0, rate:5},
+  {name:'크립토',     amount:0, rate:10},
+];
+function initState(){
+  S.assets = DEFAULT_ASSETS.map(a=>({...a}));
+  S.monthlyInvests = DEFAULT_MONTHLY.map(a=>({...a}));
+}
+initState();
+
+// ────────────────────────────────────────────
+// 네비게이션
+// ────────────────────────────────────────────
+const SCREENS = ['s0','s1','s2','s3','s4','s5','s6','s7','s8','s8b','s9','s10','s11','s11b','s12','s13','s14','s15'];
+let histStack = [];
+
+function go(id){
+  const cur = document.querySelector('.screen.active');
+  if(cur) histStack.push(cur.id);
+  _show(id);
+}
+function goBack(){
+  if(!histStack.length) return;
+  _show(histStack.pop());
+}
+function _show(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  const idx = SCREENS.indexOf(id);
+  document.getElementById('pf').style.width = (idx<=0?0:Math.round(idx/(SCREENS.length-1)*100))+'%';
+  document.getElementById('stepTxt').textContent = idx>0?(idx+'/'+(SCREENS.length-1)):'';
+  const bb = document.getElementById('backBtn');
+  bb.classList.toggle('hidden', histStack.length===0);
+  document.getElementById(id).querySelector('.body')?.scrollTo(0,0);
+}
+
+// ────────────────────────────────────────────
+// 포맷 / 복리
+// ────────────────────────────────────────────
+function fmt(v){
+  v=Math.round(v); if(!v) return '0원';
+  const uk=Math.floor(v/10000), rem=Math.round((v%10000)/1000);
+  if(uk>0&&rem>0) return uk+'억 '+rem+'천';
+  if(uk>0) return uk+'억';
+  return Math.round(v/1000)+'천만';
+}
+function fmtW(v){ return Math.round(v).toLocaleString()+'만원'; }
+function fvL(p,r,y){ return p*Math.pow(1+r/100,y); }
+function fvM(m,r,y){ const mr=r/100/12,n=y*12; return mr===0?m*n:m*((Math.pow(1+mr,n)-1)/mr); }
+function fvA(a,r,y){ const ar=r/100; return ar===0?a*y:a*((Math.pow(1+ar,y)-1)/ar); }
+
+// ────────────────────────────────────────────
+// 자산 행 렌더
+// ────────────────────────────────────────────
+function renderAssetAmtRows(){
+  document.getElementById('assetAmtRows').innerHTML = S.assets.map((a,i)=>`
+    <div class="input-group">
+      <div class="input-label">${a.name}</div>
+      <div class="input-row">
+        <input type="number" placeholder="0" inputmode="numeric" value="${a.amount||''}"
+          oninput="S.assets[${i}].amount=+this.value">
+        <span class="input-unit">만원</span>
+      </div>
+    </div>`).join('');
+}
+function renderAssetRateRows(){
+  document.getElementById('assetRateRows').innerHTML = S.assets.filter(a=>a.amount>0).map((a)=>{
+    const ri = S.assets.indexOf(a);
+    return `<div class="ar-row">
+      <div class="ar-name">${a.name}</div>
+      <div class="ar-rates">
+        ${[3,5,7,10].map(r=>`<div class="ar-rb${a.rate===r?' on':''}"
+          onclick="setOneRate(S.assets,${ri},${r},this)">${r}%</div>`).join('')}
+        <div class="ar-rb${![3,5,7,10].includes(a.rate)?' on':''}"
+          onclick="promptRate(S.assets,${ri},this)">직접</div>
+      </div>
+    </div>`;
+  }).join('') || '<div style="color:var(--t3);font-size:var(--f-sm);text-align:center;padding:var(--sp-md) 0;">입력된 자산이 없어요</div>';
+}
+
+function renderMonthlyAmtRows(){
+  document.getElementById('monthlyAmtRows').innerHTML = S.monthlyInvests.map((a,i)=>`
+    <div class="input-group">
+      <div class="input-label">${a.name}</div>
+      <div class="input-row">
+        <input type="number" placeholder="0" inputmode="numeric" value="${a.amount||''}"
+          oninput="S.monthlyInvests[${i}].amount=+this.value">
+        <span class="input-unit">만원/월</span>
+      </div>
+    </div>`).join('');
+}
+function renderMonthlyRateRows(){
+  document.getElementById('monthlyRateRows').innerHTML = S.monthlyInvests.filter(a=>a.amount>0).map((a)=>{
+    const ri = S.monthlyInvests.indexOf(a);
+    return `<div class="ar-row">
+      <div class="ar-name">${a.name}</div>
+      <div class="ar-rates">
+        ${[3,5,7,10].map(r=>`<div class="ar-rb${a.rate===r?' on':''}"
+          onclick="setOneRate(S.monthlyInvests,${ri},${r},this)">${r}%</div>`).join('')}
+        <div class="ar-rb${![3,5,7,10].includes(a.rate)?' on':''}"
+          onclick="promptRate(S.monthlyInvests,${ri},this)">직접</div>
+      </div>
+    </div>`;
+  }).join('') || '<div style="color:var(--t3);font-size:var(--f-sm);text-align:center;padding:var(--sp-md) 0;">월 투자 금액이 없어요</div>';
+}
+
+// 인라인 추가
+function toggleAssetAdd(){
+  const box = document.getElementById('assetAddBox');
+  box.classList.toggle('open');
+}
+function confirmAddAsset(){
+  const name = document.getElementById('addAssetName').value.trim();
+  const amt  = +document.getElementById('addAssetAmt').value||0;
+  if(!name) return;
+  S.assets.push({name, amount:amt, rate:5});
+  document.getElementById('addAssetName').value='';
+  document.getElementById('addAssetAmt').value='';
+  document.getElementById('assetAddBox').classList.remove('open');
+  renderAssetAmtRows();
+}
+function toggleMonthlyAdd(){
+  document.getElementById('monthlyAddBox').classList.toggle('open');
+}
+function confirmAddMonthly(){
+  const name = document.getElementById('addMonthlyName').value.trim();
+  const amt  = +document.getElementById('addMonthlyAmt').value||0;
+  if(!name) return;
+  S.monthlyInvests.push({name, amount:amt, rate:5});
+  document.getElementById('addMonthlyName').value='';
+  document.getElementById('addMonthlyAmt').value='';
+  document.getElementById('monthlyAddBox').classList.remove('open');
+  renderMonthlyAmtRows();
+}
+
+// ────────────────────────────────────────────
+// 로직
+// ────────────────────────────────────────────
+function pickAge(el,v){
+  el.closest('.sel-list').querySelectorAll('.sel-item').forEach(e=>e.classList.remove('selected'));
+  el.classList.add('selected');
+  const box = document.getElementById('customAgeBox');
+  if(v===0){box.style.display='block';return;}
+  box.style.display='none'; S.retireAge=v;
+  setTimeout(()=>go('s2'),200);
+}
+function calcYears(){
+  const v=+document.getElementById('nowAge').value;
+  S.nowAge=v; S.years=S.retireAge-v;
+  document.getElementById('yearHint').textContent = S.years>0?`→ 은퇴까지 ${S.years}년 남았어요`:'';
+}
+function goS3(){ if(S.nowAge&&S.years>0){ S.lifeAge=90; go('s3'); } }
+
+function pickMonthly(el,v){
+  el.closest('.sel-list').querySelectorAll('.sel-item').forEach(e=>e.classList.remove('selected'));
+  el.classList.add('selected');
+  const box = document.getElementById('customMonthlyBox');
+  if(v===0){box.style.display='block';return;}
+  box.style.display='none'; S.monthly=v;
+  setTimeout(()=>{doCalcTarget();go('s4');},200);
+}
+function doCalcTarget(){
+  const m=S.monthly, annual=m*12, asset=Math.round(annual/0.05);
+  S.targetAsset=asset;
+  document.getElementById('s4Title').textContent=`매월 ${m}만원 받으려면\n은퇴 시 이만큼 필요해요`;
+  document.getElementById('s4Num').textContent=fmt(asset);
+  document.getElementById('s4Calc').innerHTML=
+    `<div class="calc-row"><span class="calc-label">월 ${m}만원 × 12개월</span><span class="calc-value">${(annual).toLocaleString()}만원/년</span></div>
+     <div class="calc-row"><span class="calc-label">연 필요금액 ÷ 배당수익률 5%</span><span class="calc-value">= <strong>${fmt(asset)}</strong></span></div>`;
+}
+
+function doPension(){
+  S.pension=+document.getElementById('pension').value||0;
+  S.pensionAge=S.pensionAge||65;
+  const gapY=Math.max(0,S.pensionAge-S.retireAge);
+  const afterM=Math.max(0,S.monthly-S.pension);
+
+  // ① 연금 수급 후 배당형 자산
+  const afterAsset=Math.round(afterM*12/0.05);
+  // ② 이 자산에서 나오는 배당금 (월)
+  const dividendM=Math.round(afterAsset*0.05/12);
+  // ③ 공백기 동안 배당금이 나오더라도 부족한 금액
+  const gapShortfall=Math.max(0,S.monthly-dividendM); // 월 부족분
+  const gapNeeded=Math.round(gapShortfall*12*gapY);    // 별도 필요 총액
+
+  S.targetGap=gapNeeded;
+  S.targetAfter=afterAsset;
+  S.finalTarget=Math.round(gapNeeded+afterAsset);
+
+  // S7 화면 업데이트
+  document.getElementById('s7gy').textContent=gapY;
+  document.getElementById('s7after').textContent=
+    afterM>0?`월 ${afterM}만원 ÷ 5% = ${fmt(afterAsset)}`:`연금으로 생활비가 충당돼요`;
+  document.getElementById('s7after-sub').textContent=
+    afterM>0?`이 자산에서 연 5% 배당으로 월 ${fmtW(dividendM)} 수령해요`:`국민연금이 생활비를 커버해요`;
+  document.getElementById('s7gap').textContent=
+    gapNeeded>0?`${fmt(gapNeeded)} 별도 필요해요`:`배당금으로 공백기도 충당 가능해요`;
+  document.getElementById('s7gap-sub').textContent=
+    gapNeeded>0
+      ?`배당금 월 ${fmtW(dividendM)}을 받더라도 월 ${fmtW(gapShortfall)} 부족 → ${gapY}년 × 12 = ${fmt(gapNeeded)}`
+      :`목표자산의 배당금으로 공백기 생활비도 해결돼요`;
+  document.getElementById('s7total').textContent=fmt(S.finalTarget);
+  const diff=S.targetAsset-S.finalTarget;
+  document.getElementById('s7cmp-top').textContent=diff>0?fmt(S.targetAsset)+'보다':'';
+  document.getElementById('s7cmp-bot').textContent=diff>0?fmt(diff)+' 줄었어요':'동일해요';
+
+  renderAssetAmtRows();
+  go('s7');
+}
+
+function doAsset(){
+  // 수익률 행 렌더 후 다음
+  renderAssetRateRows();
+  go('s8b');
+}
+
+function afterAssetRate(){
+  const y=S.years;
+  S._assetFV=S.assets.reduce((s,a)=>s+fvL(a.amount,a.rate,y),0);
+  const pct=Math.round(S._assetFV/S.finalTarget*100);
+  document.getElementById('s9sub').innerHTML=
+    `지금 모은 돈은 은퇴 시점에<br><strong style="color:var(--blue);">${fmt(Math.round(S._assetFV))}</strong>이 돼요<br>`+
+    `이미 목표의 <strong style="color:var(--blue);">${pct}%</strong> 달성했어요`;
+  renderMonthlyAmtRows();
+  go('s9');
+}
+
+function afterMonthlyRate(){
+  renderMonthlyRateRows();
+  go('s11b');
+}
+
+function setBonus(v,el){
+  S.br=v;
+  document.getElementById('bonusRates').querySelectorAll('.ar-rb').forEach(b=>b.classList.remove('on'));
+  el.classList.add('on');
+}
+
+function doFinal(){
+  const y=S.years;
+  const assetFV=S._assetFV||0;
+  const mFV=S.monthlyInvests.reduce((s,a)=>s+fvM(a.amount,a.rate,y),0);
+  const bonusFV=fvA(S.bonus,S.br,y);
+  const total=assetFV+mFV+S.a_db+bonusFV;
+  S.totalAtRetire=Math.round(total);
+  renderResult();
+  go('s13');
+}
+
+function renderResult(){
+  const tot=S.totalAtRetire+(S.housingOn?0:0); // 주택연금은 월 수령으로 별도
+  const tgt=S.finalTarget;
+  const pct=Math.round((tot/tgt-1)*100);
+  const mi=Math.round(tot*0.05/12)+(S.housingOn?S.housingMonthly:0);
+  const ri=Math.round(mi/Math.pow(1+S.inflation/100,S.years));
+  const gap=ri-S.monthly;
+
+  document.getElementById('s13tot').textContent=fmt(tot);
+  document.getElementById('s13tgt').textContent=fmt(tgt);
+  document.getElementById('s13badge').textContent=pct>=0?`달성 가능해요 +${pct}%`:`아직 ${Math.abs(pct)}% 부족해요`;
+  document.getElementById('s13badge').className='badge '+(pct>=0?'blue':'red');
+  document.getElementById('s13mi').textContent=`약 ${mi.toLocaleString()}만원`;
+  const riCard=document.getElementById('s13riCard');
+  riCard.className='card '+(gap>=0?'blue':'red');
+  document.getElementById('s13ri').textContent=
+    `월 ${ri.toLocaleString()}만원 · 목표 대비 ${gap>=0?'+':''}${gap.toLocaleString()}만원`;
+
+  updateTotalCard(tot, mi, ri);
+  buildReport(tot, mi, ri);
+}
+
+function updateTotalCard(tot, mi, ri){
+  document.getElementById('rc_tot').textContent=fmt(Math.round(tot));
+  document.getElementById('rc_mi').textContent=mi.toLocaleString()+'만원';
+  document.getElementById('rc_ri').textContent='월 '+ri.toLocaleString()+'만원';
+}
+
+function buildReport(tot, mi, ri){
+  // 입력값 요약 — 현재 자산까지만
+  const items=[
+    {l:'은퇴 나이', v:S.retireAge+'살', s:'s1'},
+    {l:'목표 생활비', v:S.monthly+'만원/월', s:'s3'},
+    {l:'국민연금', v:S.pension+'만원/월', s:'s6'},
+    ...S.assets.filter(a=>a.amount>0).map(a=>({l:a.name, v:fmtW(a.amount)+' · '+a.rate+'%', s:'s8'})),
+    ...(S.a_db?[{l:'DB 퇴직금', v:fmtW(S.a_db), s:'s10'}]:[]),
+  ];
+  document.getElementById('reportSummary').innerHTML=items.map(it=>`
+    <div class="rpt-item">
+      <div class="rpt-lbl">${it.l}</div>
+      <div class="rpt-val">${it.v}</div>
+      ${it.s?`<div class="rpt-edit" onclick="go('${it.s}')">수정</div>`:''}
+    </div>`).join('');
+
+  // 조정 슬라이더 — 월 투자 항목만
+  const adjItems = S.monthlyInvests.filter(a=>a.amount>0).map((a,i)=>{
+    const ri = S.monthlyInvests.indexOf(a);
+    return {l:a.name, amount:a.amount, rate:a.rate, max:500, step:10, ri};
+  });
+  document.getElementById('adjustRows').innerHTML=adjItems.map((it,j)=>`
+    <div class="sl-group">
+      <div class="sl-top">
+        <span class="sl-name">${it.l}</span>
+        <span style="display:flex;align-items:center;gap:5px;">
+          <span style="font-size:var(--f-xs);color:var(--t3);">수익률</span>
+          <span style="display:flex;gap:3px;" id="adjr_${j}">
+            ${[3,5,7,10].map(r=>`<span class="ar-rb${it.rate===r?' on':''}" style="padding:2px 7px;font-size:var(--f-xs);"
+              onclick="setAdjRateM(${it.ri},${r},${j},this)">${r}%</span>`).join('')}
+            <span class="ar-rb${![3,5,7,10].includes(it.rate)?' on':''}" style="padding:2px 7px;font-size:var(--f-xs);"
+              onclick="promptAdjRate(${it.ri},${j},this)">직접</span>
+          </span>
+        </span>
+      </div>
+      <div class="sl-wrap">
+        <div class="sl-bg"></div>
+        <div class="sl-fill" id="adj_f${j}" style="width:${Math.min(100,it.amount/it.max*100)}%"></div>
+        <input type="range" min="0" max="${it.max}" step="${it.step}" value="${it.amount}"
+          oninput="onMonthlySlider(${it.ri},${j},this)">
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-top:3px;">
+        <span style="font-size:var(--f-xs);color:var(--t3);">0</span>
+        <span style="font-size:var(--f-xs);font-weight:600;color:var(--t2);" id="adj_l${j}">${it.amount.toLocaleString()}만원/월</span>
+      </div>
+    </div>`).join('');
+
+  // 성과급 슬라이더 표시 (있을 때만)
+  const bsg = document.getElementById('bonusSliderGroup');
+  bsg.style.display = S.bonus>0 ? 'block' : 'none';
+  if(S.bonus>0){
+    const bs = document.querySelector('#bonusSliderGroup input[type=range]');
+    if(bs){ bs.value=S.bonus; }
+    document.getElementById('adj_bonus_f').style.width=(S.bonus/5000*100)+'%';
+    document.getElementById('adj_bonus_l').textContent=S.bonus.toLocaleString()+'만원/년';
+    // 수익률 초기 on
+    document.querySelectorAll('#bonusAdjRates .ar-rb').forEach(b=>{
+      b.classList.toggle('on',+b.textContent===S.br);
+    });
+  }
+
+  // 국민연금 수급 나이 슬라이더 초기값
+  document.getElementById('rv_pension').textContent=S.pensionAge+'살';
+  document.getElementById('rf_pension').style.width=((S.pensionAge-60)/10*100)+'%';
+  const ps=document.querySelector('#s15 input[type=range][min="60"]');
+  if(ps) ps.value=S.pensionAge;
+}
+
+// 공통 수익률 단일 선택
+function setOneRate(arr, idx, r, el){
+  arr[idx].rate = r;
+  el.closest('.ar-rates').querySelectorAll('.ar-rb').forEach(b=>b.classList.remove('on'));
+  el.classList.add('on');
+}
+// 직접 입력 (인라인 prompt 대신 간이 input 표시)
+function promptRate(arr, idx, el){
+  const row = el.closest('.ar-rates');
+  let inp = row.querySelector('.rate-direct-input');
+  if(!inp){
+    inp = document.createElement('input');
+    inp.type='number'; inp.min='0'; inp.max='100'; inp.placeholder='%';
+    inp.className='rate-direct-input';
+    inp.style.cssText='width:40px;border:none;border-bottom:1.5px solid var(--blue);outline:none;font-size:var(--f-xs);font-weight:700;color:var(--blue);background:transparent;text-align:center;padding:2px 0;font-family:inherit;';
+    inp.oninput=function(){
+      const v=+this.value;
+      if(v>0){ arr[idx].rate=v; row.querySelectorAll('.ar-rb').forEach(b=>b.classList.remove('on')); el.classList.add('on'); el.textContent=v+'%'; }
+    };
+    inp.onblur=function(){ if(!this.value) this.remove(); };
+    row.appendChild(inp);
+  }
+  inp.focus();
+}
+// 리포트 월투자 슬라이더
+function onMonthlySlider(ri,j,inp){
+  const v=+inp.value;
+  S.monthlyInvests[ri].amount=v;
+  document.getElementById('adj_l'+j).textContent=v.toLocaleString()+'만원/월';
+  document.getElementById('adj_f'+j).style.width=(v/+inp.max*100)+'%';
+  recalc();
+}
+function setAdjRateM(ri,r,j,el){
+  S.monthlyInvests[ri].rate=r;
+  document.getElementById('adjr_'+j).querySelectorAll('.ar-rb').forEach(b=>b.classList.remove('on'));
+  el.classList.add('on');
+  recalc();
+}
+function promptAdjRate(ri,j,el){
+  const v=prompt('목표 수익률을 입력해주세요 (숫자만)');
+  if(v&&+v>0){ S.monthlyInvests[ri].rate=+v; el.textContent=v+'%'; el.classList.add('on'); recalc(); }
+}
+// 성과급 슬라이더
+function onBonusSlider(inp){
+  const v=+inp.value; S.bonus=v;
+  document.getElementById('adj_bonus_l').textContent=v.toLocaleString()+'만원/년';
+  document.getElementById('adj_bonus_f').style.width=(v/5000*100)+'%';
+  recalc();
+}
+function setBonusAdj(r,el){
+  S.br=r;
+  document.getElementById('bonusAdjRates').querySelectorAll('.ar-rb').forEach(b=>b.classList.remove('on'));
+  el.classList.add('on');
+  recalc();
+}
+function onInfl(inp){ const v=+inp.value; S.inflation=v; document.getElementById('rv_infl').textContent=v+'%'; document.getElementById('rf_infl').style.width=(v/10*100)+'%'; recalc(); }
+function onPension(inp){ const v=+inp.value; S.pensionAge=v; document.getElementById('rv_pension').textContent=v+'살'; document.getElementById('rf_pension').style.width=((v-60)/10*100)+'%'; recalc(); }
+
+function recalc(){
+  const y=Math.max(1,S.years);
+  const aFV=S.assets.reduce((s,a)=>s+fvL(a.amount,a.rate,y),0);
+  const mFV=S.monthlyInvests.reduce((s,a)=>s+fvM(a.amount,a.rate,y),0);
+  const tot=aFV+mFV+S.a_db+fvA(S.bonus,S.br,y);
+  const mi=Math.round(tot*0.05/12)+(S.housingOn?S.housingMonthly:0);
+  const ri=Math.round(mi/Math.pow(1+S.inflation/100,y));
+  updateTotalCard(Math.round(tot),mi,ri);
+}
+
+// ────────────────────────────────────────────
+// 주택연금 (리포트 내 토글)
+// ────────────────────────────────────────────
+function toggleHousing(){
+  S.housingOn=!S.housingOn;
+  const sw=document.getElementById('housingSwitch');
+  const det=document.getElementById('housingDetail');
+  sw.classList.toggle('on',S.housingOn);
+  det.classList.toggle('open',S.housingOn);
+  if(!S.housingOn){ S.housingMonthly=0; document.getElementById('housingToggleSub').textContent='집을 담보로 매달 연금을 더 받을 수 있어요'; recalc(); }
+}
+function calcHousing(){
+  const hv=+document.getElementById('houseVal').value||0;
+  const ha=+document.getElementById('housingAge').value||70;
+  if(!hv){document.getElementById('housingResult').textContent='주택 시세를 입력해주세요';S.housingMonthly=0;return;}
+  const rate=ha>=75?.005:ha>=70?.0045:ha>=65?.004:.0035;
+  const m=Math.round(hv*.8*rate);
+  S.housingMonthly=m;
+  document.getElementById('housingResult').textContent=`약 ${m.toLocaleString()}만원/월`;
+  document.getElementById('housingToggleSub').textContent=`주택연금 월 ${m.toLocaleString()}만원 포함됐어요`;
+  recalc();
+}
+
+// ────────────────────────────────────────────
+// Google Sheets 연동 설정
+// ↓ Apps Script 배포 후 여기에 URL 붙여넣기
+// ────────────────────────────────────────────
+const SHEET_URL = 'https://script.google.com/macros/s/AKfycbzQi0c8NfTrnQJ0vNEvXUuHuMeyQ2bXRFatNArkd6Gmm8YDHcg88QRzDe4sSvTGDYXYCw/exec';
+
+// ────────────────────────────────────────────
+// 저장 모달
+// ────────────────────────────────────────────
+function showSaveModal(){
+  const m = document.getElementById('saveModal');
+  const s = document.getElementById('saveSheet');
+  m.style.display = 'flex';
+  setTimeout(()=>{ s.style.display='block'; }, 10);
+  setTimeout(()=>document.getElementById('savePwInput').focus(), 150);
+}
+function closeSaveModal(){
+  document.getElementById('saveSheet').style.display='none';
+  document.getElementById('saveModal').style.display='none';
+  document.getElementById('savePwInput').value='';
+}
+
+async function doSaveToSheet(){
+  const pw = document.getElementById('savePwInput').value.trim();
+  if(!pw || pw.length < 4){ showToast('비밀번호는 숫자 4자리 이상이에요'); return; }
+
+  showToast('저장 중이에요...');
+  closeSaveModal();
+
+  const data = {
+    action: 'save',
+    password: pw,
+    retireAge: S.retireAge,
+    nowAge: S.nowAge,
+    monthly: S.monthly,
+    pension: S.pension,
+    pensionAge: S.pensionAge,
+    assets: JSON.stringify(S.assets),
+    a_db: S.a_db,
+    monthlyInvests: JSON.stringify(S.monthlyInvests),
+    bonus: S.bonus,
+    br: S.br,
+    inflation: S.inflation,
+    totalAtRetire: S.totalAtRetire,
+    savedAt: new Date().toLocaleString('ko-KR'),
+  };
+
+  try {
+    const res = await fetch(SHEET_URL, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+    const json = await res.json();
+    if(json.status === 'ok'){
+      showToast(`✓ 비밀번호 ${pw}로 저장됐어요`);
+    } else {
+      showToast('저장에 실패했어요. 다시 시도해주세요.');
+    }
+  } catch(e) {
+    showToast('저장에 실패했어요. 다시 시도해주세요.');
+  }
+}
+
+// ────────────────────────────────────────────
+// 불러오기 모달
+// ────────────────────────────────────────────
+function showLoadModal(){
+  const m = document.getElementById('loadModal');
+  m.style.display = 'block';
+  document.getElementById('loadErrMsg').textContent = '';
+  setTimeout(()=>document.getElementById('loadPwInput').focus(), 150);
+}
+function closeLoadModal(){
+  document.getElementById('loadModal').style.display='none';
+  document.getElementById('loadPwInput').value='';
+  document.getElementById('loadErrMsg').textContent='';
+}
+
+async function doLoadFromSheet(){
+  const pw = document.getElementById('loadPwInput').value.trim();
+  if(!pw){ document.getElementById('loadErrMsg').textContent='비밀번호를 입력해주세요'; return; }
+
+  document.getElementById('loadErrMsg').textContent='';
+  showToast('불러오는 중이에요...');
+
+  try {
+    const url = `${SHEET_URL}?action=load&password=${encodeURIComponent(pw)}`;
+    const res = await fetch(url);
+    const json = await res.json();
+
+    if(json.status === 'ok' && json.data){
+      closeLoadModal();
+      applyLoadedData(json.data);
+      showToast('✓ 불러왔어요! 결과를 확인해보세요');
+      go('s13');
+    } else {
+      document.getElementById('loadErrMsg').textContent = '해당 비밀번호로 저장된 내용이 없어요';
+    }
+  } catch(e) {
+    document.getElementById('loadErrMsg').textContent = '불러오기에 실패했어요. 다시 시도해주세요';
+  }
+}
+
+function applyLoadedData(d){
+  S.retireAge   = +d.retireAge   || 60;
+  S.nowAge      = +d.nowAge      || 0;
+  S.years       = S.retireAge - S.nowAge;
+  S.monthly     = +d.monthly     || 300;
+  S.pension     = +d.pension     || 0;
+  S.pensionAge  = +d.pensionAge  || 65;
+  S.a_db        = +d.a_db        || 0;
+  S.bonus       = +d.bonus       || 0;
+  S.br          = +d.br          || 5;
+  S.inflation   = +d.inflation   || 2;
+  S.totalAtRetire = +d.totalAtRetire || 0;
+  try { S.assets = JSON.parse(d.assets); } catch(e){}
+  try { S.monthlyInvests = JSON.parse(d.monthlyInvests); } catch(e){}
+  renderResult();
+}
+
+// ────────────────────────────────────────────
+// 저장 — 이미지 캡처 (별도)
+// ────────────────────────────────────────────
+async function doCapture(){
+  const el = document.getElementById('reportCapture');
+  showToast('이미지 저장 중이에요...');
+  try {
+    const scrollTop = el.scrollTop;
+    el.scrollTop = 0;
+    const canvas = await html2canvas(el, {
+      scale: 2, useCORS: true, backgroundColor: '#ffffff',
+      width: el.offsetWidth, height: el.scrollHeight,
+      windowWidth: el.offsetWidth, windowHeight: el.scrollHeight,
+      scrollX: 0, scrollY: 0,
+      onclone: (doc) => {
+        const cloned = doc.getElementById('reportCapture');
+        if(cloned){ cloned.style.height = el.scrollHeight+'px'; cloned.style.overflow='visible'; }
+      }
+    });
+    el.scrollTop = scrollTop;
+    const a = document.createElement('a');
+    a.href = canvas.toDataURL('image/png');
+    a.download = '은퇴준비_리포트.png';
+    a.click();
+    showToast('✓ 이미지가 저장됐어요');
+  } catch(e) {
+    showToast('저장 중 오류가 발생했어요');
+  }
+}
+
+// ────────────────────────────────────────────
+// 토스트
+// ────────────────────────────────────────────
+let _toastTimer;
+function showToast(msg){
+  let t = document.getElementById('_toast');
+  if(!t){
+    t = document.createElement('div');
+    t.id = '_toast';
+    t.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#191F28;color:#fff;padding:10px 20px;border-radius:20px;font-size:13px;font-weight:600;z-index:9999;font-family:inherit;white-space:nowrap;transition:opacity .2s;pointer-events:none;';
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.style.opacity = '1';
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(()=>{ t.style.opacity='0'; }, 2200);
+}
+
+function doShare(){
+  const tot=document.getElementById('rc_tot').textContent;
+  const mi=document.getElementById('rc_mi').textContent;
+  const txt=`내 은퇴 준비 결과\n예상 총자산: ${tot}\n예상 월 생활비: ${mi}`;
+  if(navigator.share) navigator.share({title:'내 은퇴 준비 결과',text:txt});
+  else{ navigator.clipboard?.writeText(txt); alert('클립보드에 복사됐어요!'); }
+}
+
+function doReset(){
+  initState();
+  Object.assign(S,{retireAge:60,nowAge:0,lifeAge:90,years:0,monthly:300,pension:0,pensionAge:65,
+    targetGap:0,targetAfter:0,finalTarget:0,a_db:0,bonus:0,br:5,inflation:2,
+    housingMonthly:0,housingOn:false,totalAtRetire:0,_assetFV:0});
+  document.querySelectorAll('input[type=number]').forEach(i=>i.value='');
+  document.querySelectorAll('.sel-item').forEach(e=>e.classList.remove('selected'));
+  document.querySelectorAll('#customAgeBox,#customMonthlyBox').forEach(b=>b.style.display='none');
+  document.getElementById('housingSwitch').classList.remove('on');
+  document.getElementById('housingDetail').classList.remove('open');
+  histStack=[];
+  _show('s0');
+}
+
+// S8b → S9 연결
+document.getElementById('s8b').querySelector('.btn').onclick = afterAssetRate;
+// S11b → S12 연결 (수익률 선택 후 바로 s12로)
+document.getElementById('s11b').querySelector('.btn').onclick = function(){ go('s12'); };
+// S8 다음 버튼 → 입력값 싱크 후 수익률 화면
+document.getElementById('s8').querySelector('.btn').onclick = function(){
+  document.querySelectorAll('#assetAmtRows input[type=number]').forEach((inp,i)=>{
+    if(S.assets[i]) S.assets[i].amount=+inp.value||0;
+  });
+  renderAssetRateRows();
+  go('s8b');
+};
+// S11 다음 버튼 → 입력값 싱크 후 수익률 화면
+document.getElementById('s11').querySelector('.btn').onclick = function(){
+  document.querySelectorAll('#monthlyAmtRows input[type=number]').forEach((inp,i)=>{
+    if(S.monthlyInvests[i]) S.monthlyInvests[i].amount=+inp.value||0;
+  });
+  renderMonthlyRateRows();
+  go('s11b');
+};
+</script>
+</body>
+</html>
