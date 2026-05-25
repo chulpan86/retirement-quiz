@@ -3,7 +3,26 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<title>은퇴 준비 계산기</title>
+<title>은퇴전략 테스트</title>
+
+<!-- 카카오톡 공유 / SNS OG 태그 -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="은퇴전략 테스트">
+<meta property="og:description" content="나의 은퇴 준비, 지금 얼마나 됐을까? 3분이면 알 수 있어요">
+<meta property="og:image" content="https://chulpan86.github.io/retirement-quiz/og-image.png">
+<meta property="og:url" content="https://chulpan86.github.io/retirement-quiz/">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="은퇴전략 테스트">
+<meta name="twitter:description" content="나의 은퇴 준비, 지금 얼마나 됐을까? 3분이면 알 수 있어요">
+<meta name="twitter:image" content="https://chulpan86.github.io/retirement-quiz/og-image.png">
+
+<!-- 홈화면 추가 아이콘 (iOS / Android) -->
+<link rel="apple-touch-icon" href="https://chulpan86.github.io/retirement-quiz/icon.png">
+<link rel="icon" type="image/png" href="https://chulpan86.github.io/retirement-quiz/icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="은퇴전략 테스트">
+<meta name="theme-color" content="#3182F6">
 <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
@@ -689,6 +708,13 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
 
       <!-- 물가 + 국민연금 수급 나이 -->
       <div class="sl-group">
+        <div class="sl-top"><span class="sl-name">배당 수익률 (목표자산 기준)</span><span class="sl-val" id="rv_dr">4%</span></div>
+        <div class="sl-wrap"><div class="sl-bg"></div><div class="sl-fill" id="rf_dr" style="width:33%;background:var(--blue);"></div>
+          <input type="range" min="1" max="10" step="0.5" value="4" oninput="onDividendRate(this)">
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-top:3px;"><span style="font-size:var(--f-xs);color:var(--t3);">1%</span><span style="font-size:var(--f-xs);color:var(--t3);">10%</span></div>
+      </div>
+      <div class="sl-group">
         <div class="sl-top"><span class="sl-name">물가 상승률</span><span class="sl-val" id="rv_infl">2%</span></div>
         <div class="sl-wrap"><div class="sl-bg"></div><div class="sl-fill" id="rf_infl" style="width:20%;background:var(--t3);"></div>
           <input type="range" min="0" max="10" step="0.5" value="2" oninput="onInfl(this)"></div>
@@ -770,6 +796,7 @@ const S = {
   monthlyInvests:[],
   bonus:0, br:5,
   inflation:2,
+  dividendRate:4,
   housingMonthly:0, housingOn:false,
   totalAtRetire:0, _assetFV:0,
 };
@@ -968,13 +995,14 @@ function pickMonthly(el,v){
   setTimeout(()=>{doCalcTarget();go('s4');},200);
 }
 function doCalcTarget(){
-  const m=S.monthly, annual=m*12, asset=Math.round(annual/0.05);
+  const m=S.monthly, dr=S.dividendRate/100;
+  const annual=m*12, asset=Math.round(annual/dr);
   S.targetAsset=asset;
   document.getElementById('s4Title').textContent=`매월 ${m}만원 받으려면\n은퇴 시 이만큼 필요해요`;
   document.getElementById('s4Num').textContent=fmt(asset);
   document.getElementById('s4Calc').innerHTML=
-    `<div class="calc-row"><span class="calc-label">월 ${m}만원 × 12개월</span><span class="calc-value">${(annual).toLocaleString()}만원/년</span></div>
-     <div class="calc-row"><span class="calc-label">연 필요금액 ÷ 배당수익률 5%</span><span class="calc-value">= <strong>${fmt(asset)}</strong></span></div>`;
+    `<div class="calc-row"><span class="calc-label">월 ${m}만원 × 12개월</span><span class="calc-value">${annual.toLocaleString()}만원/년</span></div>
+     <div class="calc-row"><span class="calc-label">연 필요금액 ÷ 배당수익률 ${S.dividendRate}%</span><span class="calc-value">= <strong>${fmt(asset)}</strong></span></div>`;
 }
 
 function doPension(){
@@ -983,10 +1011,9 @@ function doPension(){
   const gapY=Math.max(0,S.pensionAge-S.retireAge);
   const afterM=Math.max(0,S.monthly-S.pension);
 
-  // ① 연금 수급 후 배당형 자산
-  const afterAsset=Math.round(afterM*12/0.05);
-  // ② 이 자산에서 나오는 배당금 (월)
-  const dividendM=Math.round(afterAsset*0.05/12);
+  const dr=S.dividendRate/100;
+  const afterAsset=Math.round(afterM*12/dr);
+  const dividendM=Math.round(afterAsset*dr/12);
   // ③ 공백기 동안 배당금이 나오더라도 부족한 금액
   const gapShortfall=Math.max(0,S.monthly-dividendM); // 월 부족분
   const gapNeeded=Math.round(gapShortfall*12*gapY);    // 별도 필요 총액
@@ -998,9 +1025,9 @@ function doPension(){
   // S7 화면 업데이트
   document.getElementById('s7gy').textContent=gapY;
   document.getElementById('s7after').textContent=
-    afterM>0?`월 ${afterM}만원 ÷ 5% = ${fmt(afterAsset)}`:`연금으로 생활비가 충당돼요`;
+    afterM>0?`월 ${afterM}만원 ÷ ${S.dividendRate}% = ${fmt(afterAsset)}`:`연금으로 생활비가 충당돼요`;
   document.getElementById('s7after-sub').textContent=
-    afterM>0?`이 자산에서 연 5% 배당으로 월 ${fmtW(dividendM)} 수령해요`:`국민연금이 생활비를 커버해요`;
+    afterM>0?`이 자산에서 연 ${S.dividendRate}% 배당으로 월 ${fmtW(dividendM)} 수령해요`:`국민연금이 생활비를 커버해요`;
   document.getElementById('s7gap').textContent=
     gapNeeded>0?`${fmt(gapNeeded)} 별도 필요해요`:`배당금으로 공백기도 충당 가능해요`;
   document.getElementById('s7gap-sub').textContent=
@@ -1062,10 +1089,11 @@ function doFinal(){
 }
 
 function renderResult(){
-  const tot=S.totalAtRetire+(S.housingOn?0:0); // 주택연금은 월 수령으로 별도
+  const tot=S.totalAtRetire;
   const tgt=S.finalTarget;
+  const dr=S.dividendRate/100;
   const pct=Math.round((tot/tgt-1)*100);
-  const mi=Math.round(tot*0.05/12)+(S.housingOn?S.housingMonthly:0);
+  const mi=Math.round(tot*dr/12)+(S.housingOn?S.housingMonthly:0);
   const ri=Math.round(mi/Math.pow(1+S.inflation/100,S.years));
   const gap=ri-S.monthly;
 
@@ -1155,6 +1183,10 @@ function buildReport(tot, mi, ri){
   document.getElementById('rf_pension').style.width=((S.pensionAge-60)/10*100)+'%';
   const ps=document.querySelector('#s15 input[type=range][min="60"]');
   if(ps) ps.value=S.pensionAge;
+  document.getElementById('rv_dr').textContent=S.dividendRate+'%';
+  document.getElementById('rf_dr').style.width=((S.dividendRate-1)/9*100)+'%';
+  const drSlider=document.querySelector('#s15 input[type=range][min="1"]');
+  if(drSlider) drSlider.value=S.dividendRate;
 }
 
 // 공통 수익률 단일 선택
@@ -1214,13 +1246,15 @@ function setBonusAdj(r,el){
 }
 function onInfl(inp){ const v=+inp.value; S.inflation=v; document.getElementById('rv_infl').textContent=v+'%'; document.getElementById('rf_infl').style.width=(v/10*100)+'%'; recalc(); }
 function onPension(inp){ const v=+inp.value; S.pensionAge=v; document.getElementById('rv_pension').textContent=v+'살'; document.getElementById('rf_pension').style.width=((v-60)/10*100)+'%'; recalc(); }
+function onDividendRate(inp){ const v=+inp.value; S.dividendRate=v; document.getElementById('rv_dr').textContent=v+'%'; document.getElementById('rf_dr').style.width=((v-1)/9*100)+'%'; recalc(); }
 
 function recalc(){
   const y=Math.max(1,S.years);
+  const dr=S.dividendRate/100;
   const aFV=S.assets.reduce((s,a)=>s+fvL(a.amount,a.rate,y),0);
   const mFV=S.monthlyInvests.reduce((s,a)=>s+fvM(a.amount,a.rate,y),0);
   const tot=aFV+mFV+S.a_db+fvA(S.bonus,S.br,y);
-  const mi=Math.round(tot*0.05/12)+(S.housingOn?S.housingMonthly:0);
+  const mi=Math.round(tot*dr/12)+(S.housingOn?S.housingMonthly:0);
   const ri=Math.round(mi/Math.pow(1+S.inflation/100,y));
   updateTotalCard(Math.round(tot),mi,ri);
 }
