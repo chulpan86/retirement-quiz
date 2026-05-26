@@ -28,8 +28,13 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700&display=swap" rel="stylesheet">
 <!-- 폰트 로딩 전 깜빡임 방지 — 배경/글자색 즉시 적용 -->
-<style>html,body{background:#fff;margin:0;padding:0;}*{box-sizing:border-box;}</style>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" defer></script>
+<style>
+html,body,.app{background:#fff !important;}
+*{box-sizing:border-box;}
+/* 첫 화면 즉시 표시 */
+#s0{display:flex !important;}
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" async></script>
 <style>
 /* ── 토스 디자인 시스템 ──────────────────────────
    포인트 컬러: 블루 단일 (#3182F6)
@@ -423,7 +428,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
       <div class="q-title" id="s4Title">매월 300만원 받으려면<br>은퇴 시 이만큼 필요해요</div>
       <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:var(--sp-sm);">
         <div class="big-num" id="s4Num">7억 2천</div>
-        <div class="big-unit">연 5% 배당 기준 · 현재가치</div>
+        <div class="big-unit" id="s4Unit">연 4% 배당 기준 · 현재가치</div>
         <hr class="dv">
         <div class="calc-box" id="s4Calc"></div>
       </div>
@@ -1029,7 +1034,7 @@ function doCalcTarget(){
   S.targetAsset=asset;
   document.getElementById('s4Title').textContent=`매월 ${m}만원 받으려면\n은퇴 시 이만큼 필요해요`;
   document.getElementById('s4Num').textContent=fmt(asset);
-  document.getElementById('s4Calc').innerHTML=
+  document.getElementById('s4Unit').textContent=`연 ${S.dividendRate}% 배당 기준 · 현재가치`;
     `<div class="calc-row"><span class="calc-label">월 ${m}만원 × 12개월</span><span class="calc-value">${annual.toLocaleString()}만원/년</span></div>
      <div class="calc-row"><span class="calc-label">연 필요금액 ÷ 배당수익률 ${S.dividendRate}%</span><span class="calc-value">= <strong>${fmt(asset)}</strong></span></div>`;
 }
