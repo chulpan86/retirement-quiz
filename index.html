@@ -627,12 +627,17 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
         <div style="text-align:center;margin-bottom:var(--sp-xs);"><span class="badge blue" id="s13badge">달성 가능해요 +29%</span></div>
         <hr class="dv">
         <div class="card gray">
-          <div class="lbl">예상 월 생활비 (연 5% 배당 기준)</div>
+          <div class="lbl" id="s13miLbl">예상 월 생활비 (연 4% 배당 기준)</div>
           <div class="val" id="s13mi" style="color:var(--blue);">약 350만원</div>
         </div>
         <div class="card" id="s13riCard">
           <div class="lbl">물가 2% 반영 시 실질 구매력</div>
           <div class="val" id="s13ri">월 257만원 · 목표 대비 −43만원</div>
+        </div>
+        <div class="card" id="s13pensionCard" style="display:none;">
+          <div class="lbl">국민연금 수령 후 (만 <span id="s13pensionAge">65</span>세부터)</div>
+          <div class="val" id="s13pensionMi" style="color:var(--blue);">월 생활비 약 300만원</div>
+          <div style="font-size:var(--f-xs);color:var(--t3);margin-top:4px;" id="s13pensionSub">배당 300만원 + 국민연금 0만원</div>
         </div>
       </div>
     </div>
@@ -1133,11 +1138,26 @@ function renderResult(){
   document.getElementById('s13tgt').textContent=fmt(tgt);
   document.getElementById('s13badge').textContent=pct>=0?`달성 가능해요 +${pct}%`:`아직 ${Math.abs(pct)}% 부족해요`;
   document.getElementById('s13badge').className='badge '+(pct>=0?'blue':'red');
+  document.getElementById('s13miLbl').textContent=`예상 월 생활비 (연 ${S.dividendRate}% 배당 기준)`;
   document.getElementById('s13mi').textContent=`약 ${mi.toLocaleString()}만원`;
   const riCard=document.getElementById('s13riCard');
   riCard.className='card '+(gap>=0?'blue':'red');
   document.getElementById('s13ri').textContent=
     `월 ${ri.toLocaleString()}만원 · 목표 대비 ${gap>=0?'+':''}${gap.toLocaleString()}만원`;
+
+  // 국민연금 수령 후 카드
+  const pensionCard = document.getElementById('s13pensionCard');
+  if(S.pension > 0){
+    pensionCard.style.display = 'block';
+    const totalAfterPension = mi + S.pension; // 배당 + 연금
+    const realAfterPension = Math.round(totalAfterPension / Math.pow(1+S.inflation/100, S.years));
+    document.getElementById('s13pensionAge').textContent = S.pensionAge;
+    document.getElementById('s13pensionMi').textContent = `월 생활비 약 ${totalAfterPension.toLocaleString()}만원`;
+    document.getElementById('s13pensionSub').textContent =
+      `배당 ${mi.toLocaleString()}만원 + 국민연금 ${S.pension.toLocaleString()}만원 · 물가 반영 실질 ${realAfterPension.toLocaleString()}만원`;
+  } else {
+    pensionCard.style.display = 'none';
+  }
 
   updateTotalCard(tot, mi, ri);
   buildReport(tot, mi, ri);
